@@ -18,7 +18,8 @@ export default function OfflineDraftsPage() {
   }
 
   useEffect(() => {
-    refresh();
+    const timeout = window.setTimeout(refresh, 0);
+    return () => window.clearTimeout(timeout);
   }, []);
 
   return (

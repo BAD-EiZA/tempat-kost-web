@@ -47,6 +47,13 @@ const BUCKET_LABEL: Record<string, string> = {
   d90_plus: '>90 hari',
 };
 
+const EXPORT_LABEL = {
+  invoices: 'Tagihan',
+  payments: 'Pembayaran',
+  tenants: 'Penghuni',
+  expenses: 'Pengeluaran',
+} as const;
+
 export default async function ReportsPage({
   searchParams,
 }: {
@@ -70,11 +77,7 @@ export default async function ReportsPage({
     total: number;
     occupied: number;
   } | null = null;
-  let exportData: { csv?: string; rowCount?: number; kind?: string } | null =
-    null;
   let error: string | null = null;
-  const kind = (sp.kind as 'invoices' | 'payments' | 'tenants' | 'expenses') ||
-    'invoices';
 
   try {
     workspaces = await listWorkspaces();
@@ -102,15 +105,6 @@ export default async function ReportsPage({
       aging = ag;
       pnl = p;
       occupancy = o;
-      if (sp.kind) {
-        exportData = await apiFetch<{
-          csv?: string;
-          rowCount?: number;
-          kind?: string;
-        }>(
-          `/v1/reports/export?workspaceId=${encodeURIComponent(workspaceId)}&kind=${kind}`,
-        );
-      }
     }
   } catch (e) {
     error = e instanceof Error ? e.message : 'Gagal memuat laporan';
@@ -145,28 +139,28 @@ export default async function ReportsPage({
           {pnl && (
             <>
               <div className="rounded-xl border bg-white p-4">
-                <p className="text-xs text-zinc-500">P&L income</p>
+                <p className="text-xs text-zinc-500">Pendapatan</p>
                 <p className="mt-1 text-lg font-semibold">
                   {formatIdr(pnl.income)}
                 </p>
                 <p className="text-[11px] text-zinc-400">
-                  {pnl.from} → {pnl.to}
+                  Periode {pnl.from} sampai {pnl.to}
                 </p>
               </div>
               <div className="rounded-xl border bg-white p-4">
-                <p className="text-xs text-zinc-500">P&L expense / net</p>
+                <p className="text-xs text-zinc-500">Pengeluaran</p>
                 <p className="mt-1 text-lg font-semibold">
                   {formatIdr(pnl.expense)}
                 </p>
                 <p className="text-[11px] text-zinc-400">
-                  Net {formatIdr(pnl.net)}
+                  Laba bersih {formatIdr(pnl.net)}
                 </p>
               </div>
             </>
           )}
           {occupancy && (
             <div className="rounded-xl border bg-white p-4">
-              <p className="text-xs text-zinc-500">Occupancy snapshot</p>
+              <p className="text-xs text-zinc-500">Okupansi saat ini</p>
               <p className="mt-1 text-lg font-semibold">
                 {occupancy.occupancyRate}%
               </p>
@@ -187,19 +181,19 @@ export default async function ReportsPage({
               sub: `${overview.occupiedRooms}/${overview.rooms} kamar`,
             },
             {
-              label: 'Outstanding',
+               label: 'Belum dibayar',
               value: formatIdr(overview.outstanding),
               sub: `${overview.openInvoiceCount} tagihan terbuka`,
             },
             {
-              label: 'Overdue',
+               label: 'Lewat jatuh tempo',
               value: String(overview.overdueInvoices),
-              sub: `${overview.pendingPayments} payment pending`,
+               sub: `${overview.pendingPayments} pembayaran menunggu`,
             },
             {
-              label: 'Expense paid',
+               label: 'Pengeluaran dibayar',
               value: formatIdr(overview.expensesPaid),
-              sub: `${overview.activeTenants} tenant · ${overview.activeLeases} lease`,
+               sub: `${overview.activeTenants} penghuni · ${overview.activeLeases} kontrak`,
             },
           ].map((c) => (
             <div
@@ -225,20 +219,21 @@ export default async function ReportsPage({
               >
                 <p className="text-zinc-500">{BUCKET_LABEL[key] ?? key}</p>
                 <p className="mt-1 font-semibold">{formatIdr(b.amount)}</p>
-                <p className="text-zinc-400">{b.count} invoice</p>
+                 <p className="text-zinc-400">{b.count} tagihan</p>
               </div>
             ))}
           </div>
           {aging.rows.length > 0 && (
             <div className="mt-4 overflow-auto rounded-xl border bg-white">
-              <table className="min-w-full text-xs">
+               <table className="min-w-full text-xs">
+                 <caption className="sr-only">Rincian umur piutang</caption>
                 <thead className="bg-zinc-50 text-left">
                   <tr>
-                    <th className="px-3 py-2">Invoice</th>
-                    <th className="px-3 py-2">Tenant</th>
-                    <th className="px-3 py-2">Due</th>
-                    <th className="px-3 py-2">Hari</th>
-                    <th className="px-3 py-2">Outstanding</th>
+                     <th scope="col" className="px-3 py-2">Tagihan</th>
+                     <th scope="col" className="px-3 py-2">Penghuni</th>
+                     <th scope="col" className="px-3 py-2">Jatuh tempo</th>
+                     <th scope="col" className="px-3 py-2">Terlambat</th>
+                     <th scope="col" className="px-3 py-2">Belum dibayar</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -256,7 +251,7 @@ export default async function ReportsPage({
                               : ''
                         }`}
                       >
-                        {r.daysPastDue}
+                         {r.daysPastDue > 0 ? `${r.daysPastDue} hari` : 'Belum jatuh tempo'}
                       </td>
                       <td className="px-3 py-2">{formatIdr(r.outstanding)}</td>
                     </tr>
@@ -276,29 +271,14 @@ export default async function ReportsPage({
               (k) => (
                 <Link
                   key={k}
-                  href={`/dashboard/reports?workspaceId=${workspaceId}&kind=${k}`}
+                  href={`/api/reports/export?workspaceId=${encodeURIComponent(workspaceId)}&kind=${k}`}
                   className="rounded-lg border bg-white px-3 py-2 text-sm capitalize hover:border-zinc-400"
                 >
-                  Export {k}
+                   Unduh {EXPORT_LABEL[k]} CSV
                 </Link>
               ),
             )}
           </div>
-        </div>
-      )}
-      {exportData?.csv && (
-        <div className="mt-6 rounded-xl border bg-white p-4">
-          <p className="text-sm font-medium">
-            {exportData.kind} · {exportData.rowCount} baris
-          </p>
-          <textarea
-            readOnly
-            className="mt-2 h-64 w-full rounded border bg-zinc-50 p-2 font-mono text-xs"
-            value={exportData.csv}
-          />
-          <p className="mt-2 text-xs text-zinc-500">
-            Salin isi di atas atau simpan sebagai .csv
-          </p>
         </div>
       )}
     </>

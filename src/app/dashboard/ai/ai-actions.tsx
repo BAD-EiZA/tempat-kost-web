@@ -3,7 +3,13 @@
 import { useState } from 'react';
 import Link from 'next/link';
 
-export function AiActions({ workspaceId }: { workspaceId: string }) {
+export function AiActions({
+  workspaceId,
+  rooms,
+}: {
+  workspaceId: string;
+  rooms: Array<{ id: string; name: string }>;
+}) {
   const [result, setResult] = useState<unknown>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -424,13 +430,20 @@ export function AiActions({ workspaceId }: { workspaceId: string }) {
           }}
         >
           <h2 className="font-medium">Rekomendasi sewa</h2>
-          <input
+          <label className="mt-3 block text-sm">
+            Kamar
+          <select
             value={roomId}
             onChange={(e) => setRoomId(e.target.value)}
-            placeholder="roomId"
-            className="mt-3 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm"
             required
-          />
+          >
+            <option value="">Pilih kamar</option>
+            {rooms.map((room) => (
+              <option key={room.id} value={room.id}>{room.name}</option>
+            ))}
+          </select>
+          </label>
           <button
             type="submit"
             disabled={busy}

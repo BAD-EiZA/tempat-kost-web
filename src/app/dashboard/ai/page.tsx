@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { requireAuth } from '@/lib/auth';
-import { apiFetch, listWorkspaces } from '@/lib/api';
+import { listRooms, listWorkspaces } from '@/lib/api';
 import { AiActions } from './ai-actions';
 
 export default async function AiPage({
@@ -12,9 +12,11 @@ export default async function AiPage({
   const { workspaceId: qWs } = await searchParams;
   let workspaces: Awaited<ReturnType<typeof listWorkspaces>> = [];
   let workspaceId = qWs ?? '';
+  let rooms: Awaited<ReturnType<typeof listRooms>> = [];
   try {
     workspaces = await listWorkspaces();
     if (!workspaceId && workspaces[0]) workspaceId = workspaces[0].id;
+    if (workspaceId) rooms = await listRooms(workspaceId);
   } catch {
     /* empty */
   }
@@ -40,7 +42,15 @@ export default async function AiPage({
           ))}
         </div>
       )}
-      {workspaceId ? <AiActions workspaceId={workspaceId} /> : null}
+      {workspaceId ? (
+        <AiActions
+          workspaceId={workspaceId}
+          rooms={rooms.map((room) => ({
+            id: room.id,
+            name: `${room.property?.name ?? 'Properti'} · ${room.name}`,
+          }))}
+        />
+      ) : null}
     </>
   );
 }

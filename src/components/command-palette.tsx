@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 type Item = { href: string; label: string; group?: string };
@@ -48,6 +48,11 @@ export function CommandPalette({ items }: { items?: Item[] }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
   const [idx, setIdx] = useState(0);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
+  const listboxId = useId();
   const source = items?.length ? items : DEFAULT_ITEMS;
 
   const filtered = useMemo(() => {
@@ -67,12 +72,32 @@ export function CommandPalette({ items }: { items?: Item[] }) {
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        setOpen((v) => !v);
+        setOpen((v) => {
+          if (!v) restoreFocusRef.current = document.activeElement as HTMLElement;
+          return !v;
+        });
         setQ('');
         setIdx(0);
       }
       if (!open) return;
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setOpen(false);
+      }
+      if (e.key === 'Tab' && dialogRef.current) {
+        const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+          'input, button, [href], [tabindex]:not([tabindex="-1"])',
+        );
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last?.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first?.focus();
+        }
+      }
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         setIdx((i) => Math.min(i + 1, filtered.length - 1));
@@ -91,38 +116,89 @@ export function CommandPalette({ items }: { items?: Item[] }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [open, filtered, idx, router]);
 
-  useEffect(() => setIdx(0), [q]);
+  useEffect(() => {
+    if (open) {
+      inputRef.current?.focus();
+      return;
+    }
+    const previous = restoreFocusRef.current;
+    (previous?.isConnected ? previous : triggerRef.current)?.focus();
+    restoreFocusRef.current = null;
+  }, [open]);
+
+  function show() {
+    restoreFocusRef.current = document.activeElement as HTMLElement;
+    setQ('');
+    setIdx(0);
+    setOpen(true);
+  }
 
   if (!open) {
     return (
       <button
+        ref={triggerRef}
         type="button"
-        onClick={() => setOpen(true)}
-        className="hidden rounded-lg border border-zinc-200 bg-zinc-50 px-2 py-1 text-[11px] text-zinc-500 md:inline"
+        onClick={show}
+        aria-haspopup="dialog"
+        className="rounded-lg border border-zinc-200 bg-zinc-50 px-2 py-1 text-[11px] text-zinc-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900"
         title="Ctrl/Cmd+K"
       >
-        ⌘K
+        <span className="md:hidden">Cari</span>
+        <span className="hidden md:inline">⌘K</span>
       </button>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-[12vh]">
-      <div className="w-full max-w-lg overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-2xl">
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-[max(4rem,12vh)]"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) setOpen(false);
+      }}
+    >
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Cari halaman"
+        className="w-full max-w-lg overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-2xl"
+      >
+        <div className="flex border-b border-zinc-100">
         <input
-          autoFocus
+          ref={inputRef}
+          role="combobox"
+          aria-autocomplete="list"
+          aria-controls={listboxId}
+          aria-expanded="true"
+          aria-activedescendant={filtered[idx] ? `${listboxId}-${idx}` : undefined}
+          aria-label="Cari halaman"
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(e) => {
+            setQ(e.target.value);
+            setIdx(0);
+          }}
           placeholder="Cari halaman… (Ctrl/Cmd+K)"
-          className="w-full border-b border-zinc-100 px-4 py-3 text-sm outline-none"
+          className="w-full px-4 py-3 text-sm outline-none"
         />
-        <ul className="max-h-80 overflow-auto py-1">
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="px-4 text-sm text-zinc-500 hover:text-zinc-900 focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-zinc-900"
+            aria-label="Tutup pencarian"
+          >
+            Esc
+          </button>
+        </div>
+        <ul id={listboxId} role="listbox" className="max-h-80 overflow-auto py-1">
           {filtered.length === 0 ? (
             <li className="px-4 py-3 text-sm text-zinc-500">Tidak ada hasil</li>
           ) : (
             filtered.map((item, i) => (
-              <li key={item.href + item.label}>
+              <li key={item.href + item.label} role="none">
                 <button
+                  id={`${listboxId}-${i}`}
+                  role="option"
+                  aria-selected={i === idx}
                   type="button"
                   onClick={() => {
                     router.push(item.href);
@@ -147,12 +223,6 @@ export function CommandPalette({ items }: { items?: Item[] }) {
           ↑↓ pilih · Enter buka · Esc tutup
         </div>
       </div>
-      <button
-        type="button"
-        className="absolute inset-0 -z-10 cursor-default"
-        aria-label="close"
-        onClick={() => setOpen(false)}
-      />
     </div>
   );
 }

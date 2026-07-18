@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 export function Meteors({
@@ -10,20 +9,12 @@ export function Meteors({
   number?: number;
   className?: string;
 }) {
-  const [styles, setStyles] = useState<
-    Array<{ top: string; left: string; delay: string; duration: string }>
-  >([]);
-
-  useEffect(() => {
-    setStyles(
-      Array.from({ length: number }, () => ({
-        top: '-5%',
-        left: `${Math.floor(Math.random() * 100)}%`,
-        delay: `${Math.random() * 1.5}s`,
-        duration: `${Math.floor(Math.random() * 8 + 2)}s`,
-      })),
-    );
-  }, [number]);
+  const styles = Array.from({ length: number }, (_, index) => ({
+    top: '-5%',
+    left: `${(index * 47 + 13) % 100}%`,
+    delay: `${((index * 37) % 15) / 10}s`,
+    duration: `${(index * 29) % 8 + 2}s`,
+  }));
 
   return (
     <div className={cn('pointer-events-none absolute inset-0 overflow-hidden', className)}>

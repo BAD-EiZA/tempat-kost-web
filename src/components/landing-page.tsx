@@ -17,7 +17,6 @@ import {
   LampContainer,
   Meteors,
   MovingBorderButton,
-  ShimmerButton,
   SparklesCore,
   Spotlight,
   TextGenerateEffect,
@@ -168,10 +167,11 @@ export function LandingPage({ signedIn }: { signedIn: boolean }) {
                 </MovingBorderButton>
               </Link>
             )}
-            <a href="#fitur">
-              <ShimmerButton className="h-12 border-zinc-700 bg-transparent text-zinc-200">
-                Lihat fitur
-              </ShimmerButton>
+            <a
+              href="#fitur"
+              className="inline-flex h-12 items-center justify-center rounded-lg border border-zinc-700 px-6 font-medium text-zinc-200 transition hover:bg-white/10"
+            >
+              Lihat fitur
             </a>
           </div>
         </div>
@@ -185,7 +185,7 @@ export function LandingPage({ signedIn }: { signedIn: boolean }) {
             Semua yang dibutuhkan operasional kos
           </h2>
           <p className="mt-3 text-zinc-600">
-            Aceternity visuals di landing; form ops tetap cepat & accessible.
+            Kelola operasional, pembayaran, dan penyewa dalam satu tempat.
           </p>
         </div>
         <BentoGrid className="max-w-5xl">

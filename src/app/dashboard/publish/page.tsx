@@ -49,13 +49,13 @@ export default async function PublishPage({
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">Publish halaman publik</h1>
+      <h1 className="text-2xl font-semibold">Terbitkan halaman publik</h1>
       <p className="mt-1 text-sm text-zinc-600">
-        Halaman: /p/[slug] · CTA WhatsApp
+        Tampilkan properti kepada calon penghuni melalui halaman publik dan WhatsApp.
       </p>
       {sp.slug && (
         <p className="mt-3 text-sm text-emerald-700">
-          Live:{' '}
+          Halaman telah terbit:{' '}
           <Link href={`/p/${sp.slug}`} className="underline">
             /p/{sp.slug}
           </Link>
@@ -82,7 +82,7 @@ export default async function PublishPage({
         </div>
       )}
       {workspaceId && properties.length > 0 && (
-        <form action={publishAction} className="mt-8 max-w-lg space-y-3 rounded-xl border bg-white p-6">
+        <form action={publishAction} className="mt-8 max-w-lg space-y-4 rounded-xl border bg-white p-4 sm:p-6">
           <input type="hidden" name="workspaceId" value={workspaceId} />
           <label className="flex flex-col gap-1 text-sm">
             <span>Properti</span>
@@ -95,17 +95,18 @@ export default async function PublishPage({
             </select>
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span>Slug publik</span>
+            <span>Alamat halaman publik</span>
             <input
               name="slug"
               required
               placeholder="kos-melati"
               className="rounded-lg border px-3 py-2"
-            />
+             />
+            <span className="text-xs text-zinc-500">Hanya huruf kecil, angka, dan tanda hubung. Contoh: kos-melati</span>
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span>WhatsApp (628…)</span>
-            <input name="whatsapp" className="rounded-lg border px-3 py-2" />
+            <span>Nomor WhatsApp</span>
+            <input name="whatsapp" inputMode="tel" placeholder="628123456789" className="rounded-lg border px-3 py-2" />
           </label>
           <label className="flex flex-col gap-1 text-sm">
             <span>Warna brand</span>
@@ -117,20 +118,32 @@ export default async function PublishPage({
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span>Harga mulai</span>
+            <span>Harga mulai (Rp)</span>
             <input
               name="startingPrice"
               type="number"
+              min={0}
+              step={1000}
               className="rounded-lg border px-3 py-2"
             />
+          </label>
+          <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+            Setelah diterbitkan, halaman dapat dibuka siapa pun yang memiliki tautannya.
+          </p>
+          <label className="flex items-start gap-2 text-sm">
+            <input type="checkbox" required className="mt-0.5" />
+            <span>Saya sudah memeriksa properti, harga, dan nomor WhatsApp.</span>
           </label>
           <button
             type="submit"
             className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white"
           >
-            Publish
+            Terbitkan halaman
           </button>
         </form>
+      )}
+      {workspaceId && properties.length === 0 && !error && (
+        <p className="mt-6 text-sm text-zinc-600">Belum ada properti yang dapat diterbitkan.</p>
       )}
     </>
   );

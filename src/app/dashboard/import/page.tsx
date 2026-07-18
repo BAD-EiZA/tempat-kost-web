@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 type Kind = 'rooms' | 'tenants' | 'leases' | 'payments' | 'expenses';
@@ -15,6 +15,16 @@ type Preview = {
     invalid: number;
     sampleErrors: Array<{ row: number; message: string }>;
   };
+};
+
+type Property = { id: string; name: string };
+
+const KIND_LABEL: Record<Kind, string> = {
+  rooms: 'Kamar',
+  tenants: 'Penghuni',
+  leases: 'Kontrak',
+  payments: 'Pembayaran',
+  expenses: 'Pengeluaran',
 };
 
 function parseDelimited(text: string): { headers: string[]; rows: string[][] } {
@@ -211,10 +221,34 @@ function ImportInner() {
   const [errorCsv, setErrorCsv] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fileName, setFileName] = useState('');
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [confirmed, setConfirmed] = useState(false);
+  const [busy, setBusy] = useState<'preview' | 'commit' | null>(null);
+
+  useEffect(() => {
+    if (!workspaceId) return;
+    let ignore = false;
+    void fetch('/api/proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        path: `/v1/properties?workspaceId=${encodeURIComponent(workspaceId)}`,
+        method: 'GET',
+      }),
+    })
+      .then((res) => res.json())
+      .then((data: unknown) => {
+        if (!ignore && Array.isArray(data)) setProperties(data as Property[]);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [workspaceId]);
 
   async function onFile(f: File) {
     setFileName(f.name);
     setPreview(null);
+    setConfirmed(false);
     setError(null);
     setErrorCsv(null);
     try {
@@ -238,6 +272,8 @@ function ImportInner() {
     setError(null);
     setResult(null);
     setErrorCsv(null);
+    setConfirmed(false);
+    setBusy('preview');
     try {
       const res = await fetch('/api/proxy', {
         method: 'POST',
@@ -254,12 +290,15 @@ function ImportInner() {
       setMapping({ ...p.mapping });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error');
+    } finally {
+      setBusy(null);
     }
   }
 
   async function doCommit() {
     if (!preview) return;
     setError(null);
+    setBusy('commit');
     try {
       const res = await fetch('/api/proxy', {
         method: 'POST',
@@ -279,12 +318,14 @@ function ImportInner() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message ?? 'Commit gagal');
-      setResult(`Created ${data.created}, errors ${data.errors}`);
+      setResult(`${data.created} data berhasil diimpor, ${data.errors} gagal.`);
       if (typeof data.errorCsv === 'string' && data.errors > 0) {
         setErrorCsv(data.errorCsv);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error');
+    } finally {
+      setBusy(null);
     }
   }
 
@@ -292,48 +333,64 @@ function ImportInner() {
     <div className="mx-auto max-w-3xl">
       <h1 className="text-2xl font-semibold tracking-tight">Import data</h1>
       <p className="mt-1 text-sm text-zinc-600">
-        CSV / TSV / xlsx (sederhana) → AI mapping → dry-run → commit. Error CSV
-        bisa diunduh.
+        Unggah berkas, periksa pemetaan dan validasi, lalu konfirmasi sebelum
+        mengimpor.
       </p>
       {!workspaceId && (
         <p className="mt-4 text-sm text-amber-700">
-          Buka dari dashboard dengan ?workspaceId=
+          Workspace belum dipilih. Buka halaman ini dari menu workspace.
         </p>
       )}
       <div className="mt-6 space-y-3 rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm">
-        <div className="flex flex-wrap gap-2">
-          <select
-            value={kind}
-            onChange={(e) => {
-              setKind(e.target.value as Kind);
-              setPreview(null);
-            }}
-            className="rounded-xl border border-zinc-200 px-3 py-2 text-sm"
-          >
-            <option value="rooms">Rooms</option>
-            <option value="tenants">Tenants</option>
-            <option value="leases">Leases</option>
-            <option value="payments">Payments</option>
-            <option value="expenses">Expenses</option>
-          </select>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium">Jenis data</span>
+            <select
+              value={kind}
+              onChange={(e) => {
+                setKind(e.target.value as Kind);
+                setPreview(null);
+                setConfirmed(false);
+              }}
+              className="rounded-xl border border-zinc-200 px-3 py-2"
+            >
+              {Object.entries(KIND_LABEL).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </label>
           {(kind === 'rooms' || kind === 'leases') && (
-            <input
-              value={propertyId}
-              onChange={(e) => setPropertyId(e.target.value)}
-              placeholder="propertyId (wajib)"
-              className="min-w-[12rem] flex-1 rounded-xl border border-zinc-200 px-3 py-2 text-sm"
-            />
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="font-medium">Properti tujuan</span>
+              <select
+                value={propertyId}
+                required
+                onChange={(e) => setPropertyId(e.target.value)}
+                className="rounded-xl border border-zinc-200 px-3 py-2"
+              >
+                <option value="">Pilih properti</option>
+                {properties.map((property) => (
+                  <option key={property.id} value={property.id}>
+                    {property.name}
+                  </option>
+                ))}
+              </select>
+            </label>
           )}
         </div>
-        <input
-          type="file"
-          accept=".csv,.tsv,.txt,.xlsx,.xls,text/csv,text/tab-separated-values,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) void onFile(f);
-          }}
-          className="text-sm"
-        />
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="font-medium">Berkas sumber</span>
+          <span className="text-xs text-zinc-500">CSV atau TSV disarankan. XLSX sederhana didukung terbatas.</span>
+          <input
+            type="file"
+            accept=".csv,.tsv,.txt,.xlsx,.xls,text/csv,text/tab-separated-values,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void onFile(f);
+            }}
+            className="mt-1 text-sm"
+          />
+        </label>
         {headers.length > 0 && (
           <p className="text-xs text-zinc-500">
             {fileName} · {headers.length} kolom · {rows.length} baris
@@ -343,22 +400,24 @@ function ImportInner() {
           <button
             type="button"
             onClick={() => void doPreview()}
-            disabled={!workspaceId || !rows.length}
+            disabled={!workspaceId || !rows.length || busy !== null}
             className="rounded-xl bg-zinc-900 px-4 py-2 text-sm text-white disabled:opacity-50"
           >
-            Preview + dry-run
+            {busy === 'preview' ? 'Memvalidasi…' : 'Periksa data'}
           </button>
           <button
             type="button"
             onClick={() => void doCommit()}
             disabled={
               !preview ||
+              !confirmed ||
+              busy !== null ||
               ((kind === 'rooms' || kind === 'leases') && !propertyId) ||
               (preview.dryRun?.invalid ?? 0) === rows.length
             }
             className="rounded-xl border border-zinc-200 px-4 py-2 text-sm disabled:opacity-50"
           >
-            Commit import
+            {busy === 'commit' ? 'Mengimpor…' : 'Impor data'}
           </button>
           {errorCsv && (
             <button
@@ -376,14 +435,14 @@ function ImportInner() {
         {preview?.dryRun && (
           <div className="rounded-xl border border-zinc-100 bg-zinc-50 p-3 text-xs">
             <p>
-              Dry-run: <b>{preview.dryRun.valid}</b> valid ·{' '}
-              <b>{preview.dryRun.invalid}</b> invalid
+               Hasil validasi: <b>{preview.dryRun.valid}</b> valid ·{' '}
+               <b>{preview.dryRun.invalid}</b> tidak valid
             </p>
             {preview.dryRun.sampleErrors.length > 0 && (
               <ul className="mt-1 list-disc pl-4 text-red-700">
                 {preview.dryRun.sampleErrors.map((e) => (
                   <li key={e.row}>
-                    Row {e.row}: {e.message}
+                     Baris {e.row}: {e.message}
                   </li>
                 ))}
               </ul>
@@ -393,7 +452,7 @@ function ImportInner() {
 
         {preview && (
           <div className="space-y-2">
-            <p className="text-sm font-medium">Mapping (bisa diubah)</p>
+             <p className="text-sm font-medium">Pemetaan kolom (dapat diubah)</p>
             {preview.targetFields.map((field) => (
               <label key={field} className="flex items-center gap-2 text-xs">
                 <span className="w-28 font-mono">{field}</span>
@@ -407,7 +466,7 @@ function ImportInner() {
                   }
                   className="flex-1 rounded-lg border border-zinc-200 px-2 py-1"
                 >
-                  <option value="">— skip —</option>
+                   <option value="">Jangan impor kolom ini</option>
                   {headers.map((h) => (
                     <option key={h} value={h}>
                       {h}
@@ -416,12 +475,13 @@ function ImportInner() {
                 </select>
               </label>
             ))}
-            <div className="overflow-auto rounded-xl border">
-              <table className="min-w-full text-[10px]">
+             <div className="overflow-auto rounded-xl border">
+               <table className="min-w-full text-xs">
+                 <caption className="sr-only">Pratinjau data yang akan diimpor</caption>
                 <thead>
                   <tr className="bg-zinc-100">
                     {headers.map((h) => (
-                      <th key={h} className="px-2 py-1 text-left font-medium">
+                       <th scope="col" key={h} className="px-2 py-1 text-left font-medium">
                         {h}
                       </th>
                     ))}
@@ -439,11 +499,23 @@ function ImportInner() {
                   ))}
                 </tbody>
               </table>
-            </div>
-          </div>
-        )}
-        {result && <p className="text-sm text-emerald-700">{result}</p>}
-        {error && <p className="text-sm text-red-600">{error}</p>}
+             </div>
+             <label className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+               <input
+                 type="checkbox"
+                 checked={confirmed}
+                 onChange={(e) => setConfirmed(e.target.checked)}
+                 className="mt-0.5"
+               />
+               <span>
+                 Saya sudah memeriksa pemetaan. Impor akan membuat hingga{' '}
+                 <b>{preview.dryRun?.valid ?? rows.length} data</b> dan tidak dapat dibatalkan dari halaman ini.
+               </span>
+             </label>
+           </div>
+         )}
+        {result && <p role="status" className="text-sm text-emerald-700">{result}</p>}
+        {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
       </div>
     </div>
   );

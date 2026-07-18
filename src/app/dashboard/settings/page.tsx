@@ -56,6 +56,7 @@ export default async function SettingsPage({
   return (
     <>
       <h1 className="text-2xl font-semibold">Pengaturan workspace</h1>
+      <p className="mt-1 text-sm text-zinc-600">Identitas penagihan dan rekening pembayaran.</p>
       {workspaces.length > 0 && (
         <div className="mt-4 flex flex-wrap gap-2">
           {workspaces.map((w) => (
@@ -77,13 +78,13 @@ export default async function SettingsPage({
         </div>
       )}
       {ws && workspaceId && (
-        <form action={saveAction} className="mt-8 max-w-xl space-y-3 rounded-xl border bg-white p-6">
+        <form action={saveAction} className="mt-8 max-w-xl space-y-4 rounded-xl border bg-white p-4 sm:p-6">
           <input type="hidden" name="workspaceId" value={workspaceId} />
           {(
             [
               ['name', 'Nama', ws.name],
               ['timezone', 'Zona waktu', ws.timezone],
-              ['invoicePrefix', 'Prefix invoice', ws.invoicePrefix ?? ''],
+              ['invoicePrefix', 'Awalan nomor tagihan', ws.invoicePrefix ?? ''],
               ['defaultDueDay', 'Tanggal jatuh tempo', String(ws.defaultDueDay)],
               ['bankName', 'Bank', ws.bankName ?? ''],
               ['bankAccountName', 'Nama rekening', ws.bankAccountName ?? ''],
@@ -92,10 +93,14 @@ export default async function SettingsPage({
           ).map(([name, label, val]) => (
             <label key={name} className="flex flex-col gap-1 text-sm">
               <span className="font-medium">{label}</span>
-              <input
-                name={name}
-                defaultValue={val}
-                className="rounded-lg border border-zinc-300 px-3 py-2"
+               <input
+                 name={name}
+                 defaultValue={val}
+                 type={name === 'defaultDueDay' ? 'number' : 'text'}
+                 min={name === 'defaultDueDay' ? 1 : undefined}
+                 max={name === 'defaultDueDay' ? 31 : undefined}
+                 required={name === 'name' || name === 'timezone'}
+                 className="rounded-lg border border-zinc-300 px-3 py-2"
               />
             </label>
           ))}
@@ -103,7 +108,7 @@ export default async function SettingsPage({
             type="submit"
             className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white"
           >
-            Simpan
+            Simpan pengaturan
           </button>
         </form>
       )}

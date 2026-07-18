@@ -25,6 +25,25 @@ function formatIdr(n: number) {
   }).format(n);
 }
 
+function safeBrandColor(value: string | null) {
+  return value && /^#[0-9a-f]{6}$/i.test(value) ? value : '#18181b';
+}
+
+function foregroundFor(background: string) {
+  const channels = background
+    .slice(1)
+    .match(/.{2}/g)!
+    .map((channel) => Number.parseInt(channel, 16) / 255)
+    .map((channel) =>
+      channel <= 0.04045
+        ? channel / 12.92
+        : Math.pow((channel + 0.055) / 1.055, 2.4),
+    );
+  const luminance =
+    0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+  return luminance > 0.38 ? '#18181b' : '#ffffff';
+}
+
 export default async function PublicPropertyPage({
   params,
 }: {
@@ -52,13 +71,14 @@ export default async function PublicPropertyPage({
     );
   }
 
-  const accent = data.brandColor || '#18181b';
+  const accent = safeBrandColor(data.brandColor);
+  const accentForeground = foregroundFor(accent);
 
   return (
     <div className="min-h-full bg-zinc-50">
       <header
-        className="px-6 py-10 text-white"
-        style={{ backgroundColor: accent }}
+        className="px-6 py-10"
+        style={{ backgroundColor: accent, color: accentForeground }}
       >
         <div className="mx-auto max-w-2xl">
           <h1 className="text-3xl font-semibold">{data.name}</h1>
@@ -107,6 +127,7 @@ export default async function PublicPropertyPage({
           slug={slug}
           rooms={data.rooms}
           accent={accent}
+          accentForeground={accentForeground}
         />
       </main>
     </div>

@@ -118,10 +118,10 @@ function InsightsInner() {
       <div className="mt-4 flex flex-wrap gap-2">
         {(
           [
-            ['summary', 'Financial'],
-            ['cashflow', 'Forecast 30d'],
-            ['history', 'Cash history'],
-            ['rent', 'Rent rec'],
+            ['summary', 'Keuangan'],
+            ['cashflow', 'Proyeksi 30 hari'],
+            ['history', 'Riwayat kas'],
+            ['rent', 'Rekomendasi sewa'],
           ] as const
         ).map(([k, label]) => (
           <button
@@ -139,19 +139,23 @@ function InsightsInner() {
         ))}
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
+        <label className="min-w-[10rem] flex-1 text-sm">
+          ID properti (opsional)
         <input
           value={propertyId}
           onChange={(e) => setPropertyId(e.target.value)}
-          placeholder="propertyId (opsional)"
-          className="min-w-[10rem] flex-1 rounded-xl border border-zinc-200 px-3 py-2 text-sm"
+          className="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm"
         />
+        </label>
         {tab === 'rent' && (
+          <label className="min-w-[10rem] flex-1 text-sm">
+            ID kamar
           <input
             value={roomId}
             onChange={(e) => setRoomId(e.target.value)}
-            placeholder="roomId (wajib)"
-            className="min-w-[10rem] flex-1 rounded-xl border border-zinc-200 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm"
           />
+          </label>
         )}
       </div>
       <button
@@ -160,7 +164,7 @@ function InsightsInner() {
         onClick={() => void run()}
         className="mt-4 rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
       >
-        {busy ? '…' : 'Generate'}
+        {busy ? 'Memproses…' : 'Buat analisis'}
       </button>
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 

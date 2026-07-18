@@ -29,6 +29,18 @@ type Member = {
   user?: { fullName: string | null; email: string | null };
 };
 
+const STATUS_LABEL: Record<string, string> = {
+  NEW: 'Baru', TRIAGED: 'Sudah ditinjau', ASSIGNED: 'Ditugaskan',
+  SCHEDULED: 'Dijadwalkan', IN_PROGRESS: 'Sedang dikerjakan',
+  WAITING_MATERIAL: 'Menunggu material', RESOLVED: 'Selesai diperbaiki',
+  CLOSED: 'Ditutup', REJECTED: 'Ditolak',
+};
+
+const URGENCY_LABEL: Record<string, string> = {
+  low: 'Rendah', medium: 'Sedang', high: 'Tinggi', critical: 'Kritis',
+  LOW: 'Rendah', MEDIUM: 'Sedang', HIGH: 'Tinggi', CRITICAL: 'Kritis',
+};
+
 function slaLabel(createdAt: string, status: string) {
   if (status === 'RESOLVED' || status === 'CLOSED') return null;
   const hours = Math.floor(
@@ -123,9 +135,9 @@ export default async function MaintenancePage({
   return (
     <>
       <div className="flex flex-wrap items-end justify-between gap-2">
-        <h1 className="text-2xl font-semibold">Maintenance</h1>
+        <h1 className="text-2xl font-semibold">Pemeliharaan</h1>
         <p className="text-xs text-zinc-500">
-          {open} terbuka · SLA: &gt;24j amber, &gt;72j merah
+          {open} terbuka · SLA: lebih dari 24 jam kuning, 72 jam merah
         </p>
       </div>
       {workspaces.length > 0 && (
@@ -150,7 +162,7 @@ export default async function MaintenancePage({
           {error}
         </div>
       )}
-      <ul className="mt-6 divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white">
+      <ul aria-label="Daftar tiket pemeliharaan" className="mt-6 divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white">
         {items.length === 0 ? (
           <li className="p-6 text-sm text-zinc-500">Belum ada tiket.</li>
         ) : (
@@ -159,13 +171,13 @@ export default async function MaintenancePage({
             return (
               <li
                 key={m.id}
-                className="flex flex-wrap items-start justify-between gap-3 px-6 py-4 text-sm"
+                 className="flex flex-col items-stretch gap-3 px-4 py-4 text-sm sm:px-6 lg:flex-row lg:items-start lg:justify-between"
               >
                 <div>
                   <p className="font-medium">
                     {m.title}{' '}
                     <span className="text-xs font-normal text-zinc-500">
-                      {m.status} · {m.urgency}
+                       {STATUS_LABEL[m.status] ?? m.status} · {URGENCY_LABEL[m.urgency] ?? m.urgency}
                     </span>
                     {sla && (
                       <span className={`ml-2 text-xs ${sla.cls}`}>
@@ -204,12 +216,12 @@ export default async function MaintenancePage({
                   {m.aiJson?.triage?.hazards &&
                     m.aiJson.triage.hazards.length > 0 && (
                       <p className="mt-0.5 text-[10px] text-red-700">
-                        Hazard: {m.aiJson.triage.hazards.join(', ')}
+                         Bahaya: {m.aiJson.triage.hazards.join(', ')}
                       </p>
                     )}
                   {m.aiJson?.damage?.severitySuggestion && (
                     <p className="text-[10px] text-zinc-500">
-                      Damage: {m.aiJson.damage.severitySuggestion}
+                       Kerusakan: {m.aiJson.damage.severitySuggestion}
                       {m.aiJson.damage.observations?.[0]
                         ? ` — ${m.aiJson.damage.observations[0]}`
                         : ''}
@@ -218,19 +230,20 @@ export default async function MaintenancePage({
                 </div>
                 {m.status !== 'CLOSED' && m.status !== 'RESOLVED' && (
                   <div className="flex flex-wrap items-center gap-1">
-                    <form action={statusAction} className="flex flex-wrap gap-1">
+                     <form action={statusAction} className="grid w-full gap-2 sm:grid-cols-[1fr_1fr_auto]">
                       <input type="hidden" name="id" value={m.id} />
                       <input
                         type="hidden"
                         name="workspaceId"
                         value={workspaceId}
                       />
-                      <select
+                       <select
+                         aria-label={`Petugas untuk ${m.title}`}
                         name="assignedTo"
                         defaultValue={m.assignedTo ?? ''}
-                        className="rounded border border-zinc-300 px-1 py-1 text-xs"
+                         className="rounded-lg border border-zinc-300 px-2 py-2 text-xs"
                       >
-                        <option value="">— Assign —</option>
+                         <option value="">Belum ditugaskan</option>
                         {members.map((mem) => (
                           <option key={mem.id} value={mem.id}>
                             {mem.user?.fullName ||
@@ -239,27 +252,23 @@ export default async function MaintenancePage({
                           </option>
                         ))}
                       </select>
-                      <select
+                       <select
+                         aria-label={`Status ${m.title}`}
                         name="status"
                         defaultValue={
                           m.status === 'NEW' ? 'ASSIGNED' : m.status
                         }
-                        className="rounded border border-zinc-300 px-1 py-1 text-xs"
+                         className="rounded-lg border border-zinc-300 px-2 py-2 text-xs"
                       >
-                        <option value="TRIAGED">Triaged</option>
-                        <option value="ASSIGNED">Assigned</option>
-                        <option value="SCHEDULED">Scheduled</option>
-                        <option value="IN_PROGRESS">In progress</option>
-                        <option value="WAITING_MATERIAL">Waiting material</option>
-                        <option value="RESOLVED">Resolved</option>
-                        <option value="CLOSED">Closed</option>
-                        <option value="REJECTED">Rejected</option>
+                         {Object.entries(STATUS_LABEL).filter(([value]) => value !== 'NEW').map(([value, label]) => (
+                           <option key={value} value={value}>{label}</option>
+                         ))}
                       </select>
                       <button
                         type="submit"
                         className="rounded bg-zinc-900 px-2 py-1 text-xs text-white"
                       >
-                        Update
+                         Perbarui
                       </button>
                     </form>
                   </div>
@@ -308,16 +317,16 @@ export default async function MaintenancePage({
               </select>
             </label>
             <label className="flex flex-col gap-1 text-sm">
-              <span>Urgency</span>
+               <span>Urgensi</span>
               <select
                 name="urgency"
                 defaultValue="medium"
                 className="rounded-lg border border-zinc-300 px-3 py-2"
               >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="critical">Critical</option>
+                 <option value="low">Rendah</option>
+                 <option value="medium">Sedang</option>
+                 <option value="high">Tinggi</option>
+                 <option value="critical">Kritis</option>
               </select>
             </label>
             <label className="flex flex-col gap-1 text-sm">

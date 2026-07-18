@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useState } from 'react';
+import { useId } from 'react';
 import { cn } from '@/lib/utils';
 
 export function SparklesCore({
@@ -13,21 +13,13 @@ export function SparklesCore({
   particleColor?: string;
 }) {
   const id = useId();
-  const [particles, setParticles] = useState<
-    Array<{ x: number; y: number; r: number; o: number; d: number }>
-  >([]);
-
-  useEffect(() => {
-    setParticles(
-      Array.from({ length: particleDensity }, () => ({
-        x: Math.random() * 100,
-        y: Math.random() * 100,
-        r: Math.random() * 1.5 + 0.4,
-        o: Math.random() * 0.6 + 0.2,
-        d: Math.random() * 3 + 2,
-      })),
-    );
-  }, [particleDensity]);
+  const particles = Array.from({ length: particleDensity }, (_, index) => ({
+    x: (index * 47 + 11) % 100,
+    y: (index * 71 + 23) % 100,
+    r: ((index * 13) % 15) / 10 + 0.4,
+    o: ((index * 7) % 6) / 10 + 0.2,
+    d: (index * 17) % 3 + 2,
+  }));
 
   return (
     <div className={cn('absolute inset-0', className)} aria-hidden>

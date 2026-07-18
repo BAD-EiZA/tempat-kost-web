@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/auth';
-import { apiFetch, listProperties, listWorkspaces } from '@/lib/api';
+import { apiFetch, listWorkspaces } from '@/lib/api';
 
 async function inviteAction(formData: FormData) {
   'use server';

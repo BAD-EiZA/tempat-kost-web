@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { Alert, ConfirmSubmitButton } from '@/components/ui';
 import { requireAuth } from '@/lib/auth';
 import {
   apiFetch,
@@ -79,9 +80,7 @@ export default async function PaymentDetailPage({
         ← Pembayaran
       </Link>
       {error && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
-          {error}
-        </div>
+        <Alert variant="error" className="mt-4">{error}</Alert>
       )}
       {payment && (
         <div className="mt-4 space-y-4">
@@ -108,12 +107,15 @@ export default async function PaymentDetailPage({
                       name="workspaceId"
                       value={workspaceId}
                     />
-                    <button
-                      type="submit"
+                    <ConfirmSubmitButton
                       className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs text-white"
+                      title="Konfirmasi pembayaran?"
+                      description={`Pembayaran ${payment.paymentNumber} akan dikonfirmasi dan dialokasikan ke tagihan terkait.`}
+                      confirmLabel="Ya, konfirmasi"
+                      pendingLabel="Mengonfirmasi..."
                     >
                       Konfirmasi
-                    </button>
+                    </ConfirmSubmitButton>
                   </form>
                   <form action={rejectAction}>
                     <input type="hidden" name="id" value={payment.id} />
@@ -122,12 +124,16 @@ export default async function PaymentDetailPage({
                       name="workspaceId"
                       value={workspaceId}
                     />
-                    <button
-                      type="submit"
+                    <ConfirmSubmitButton
                       className="rounded-lg border px-3 py-1.5 text-xs"
+                      title="Tolak pembayaran?"
+                      description={`Pembayaran ${payment.paymentNumber} akan ditolak. Tindakan ini mengubah status pembayaran.`}
+                      confirmLabel="Ya, tolak"
+                      pendingLabel="Menolak..."
+                      danger
                     >
                       Tolak
-                    </button>
+                    </ConfirmSubmitButton>
                   </form>
                 </>
               )}

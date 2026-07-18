@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { Alert, ConfirmSubmitButton, PendingSubmitButton } from '@/components/ui';
 import { requireAuth } from '@/lib/auth';
 import {
   apiFetch,
@@ -152,7 +153,7 @@ export default async function LeasesPage({
         Draft → generate e-sign → aktifkan → akhiri.
       </p>
       {signToken && (
-        <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm">
+        <Alert variant="success" className="mt-3">
           Kontrak dibuat{contractId ? ` (${contractId.slice(0, 8)}…)` : ''}.{' '}
           Link e-sign:{' '}
           <a
@@ -163,7 +164,7 @@ export default async function LeasesPage({
           >
             /sign/{signToken.slice(0, 12)}…
           </a>
-        </div>
+        </Alert>
       )}
 
       {workspaces.length > 0 && (
@@ -185,9 +186,7 @@ export default async function LeasesPage({
       )}
 
       {error && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
-          {error}
-        </div>
+        <Alert variant="error" className="mt-4">{error}</Alert>
       )}
 
       <ul className="mt-6 divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white">
@@ -259,12 +258,12 @@ export default async function LeasesPage({
                         placeholder="Meter awal"
                         className="rounded border px-1 py-0.5"
                       />
-                      <button
-                        type="submit"
+                      <PendingSubmitButton
                         className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white"
+                        pendingLabel="Mengaktifkan..."
                       >
                         Check-in / Aktifkan
-                      </button>
+                      </PendingSubmitButton>
                     </form>
                   ) : null}
                   {(l.status === 'ACTIVE' || l.status === 'ENDING_SOON') && (
@@ -299,12 +298,16 @@ export default async function LeasesPage({
                         placeholder="Catatan deposit"
                         className="rounded border px-1 py-0.5"
                       />
-                      <button
-                        type="submit"
+                      <ConfirmSubmitButton
                         className="rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium"
+                        title="Akhiri kontrak?"
+                        description={`Kontrak ${l.leaseNumber} akan diakhiri memakai data serah-terima dan biaya yang diisi.`}
+                        confirmLabel="Ya, akhiri"
+                        pendingLabel="Mengakhiri..."
+                        danger
                       >
                         Akhiri
-                      </button>
+                      </ConfirmSubmitButton>
                     </form>
                   )}
                 </div>

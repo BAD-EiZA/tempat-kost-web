@@ -88,6 +88,43 @@ export async function listWorkspaces() {
   >('/v1/workspaces');
 }
 
+export type AuditLog = {
+  id: string;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  metadata: unknown;
+  ipAddress: string | null;
+  userAgent: string | null;
+  createdAt: string;
+  actor: { id: string; fullName: string | null; email: string | null } | null;
+};
+
+export async function listAuditLogs(input: {
+  workspaceId: string;
+  action?: string;
+  entityType?: string;
+  from?: string;
+  to?: string;
+  page?: number;
+}) {
+  const query = new URLSearchParams({ workspaceId: input.workspaceId });
+  if (input.action) query.set('action', input.action);
+  if (input.entityType) query.set('entityType', input.entityType);
+  if (input.from) query.set('from', input.from);
+  if (input.to) query.set('to', input.to);
+  if (input.page) query.set('page', String(input.page));
+  return apiFetch<{
+    items: AuditLog[];
+    pagination: {
+      page: number;
+      pageSize: number;
+      total: number;
+      totalPages: number;
+    };
+  }>(`/v1/audit-logs?${query}`);
+}
+
 export async function createWorkspace(name: string, slug?: string) {
   return apiFetch<{
     id: string;

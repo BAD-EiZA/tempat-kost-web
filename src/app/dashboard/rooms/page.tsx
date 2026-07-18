@@ -21,6 +21,13 @@ function formatIdr(n: string | number) {
   }).format(v);
 }
 
+const ROOM_STATUS: Record<string, { label: string; className: string }> = {
+  AVAILABLE: { label: 'Tersedia', className: 'bg-emerald-50 text-emerald-800' },
+  OCCUPIED: { label: 'Terisi', className: 'bg-blue-50 text-blue-800' },
+  MAINTENANCE: { label: 'Perbaikan', className: 'bg-amber-50 text-amber-800' },
+  INACTIVE: { label: 'Nonaktif', className: 'bg-zinc-100 text-zinc-700' },
+};
+
 async function createRoomAction(formData: FormData) {
   'use server';
   await requireAuth();
@@ -134,7 +141,7 @@ export default async function RoomsPage({
         <div>
           <h1 className="text-2xl font-semibold">Kamar</h1>
           <p className="mt-1 text-sm text-zinc-600">
-            Status, harga, dan bulk create berurutan.
+            Status, harga, dan pembuatan kamar berurutan.
           </p>
         </div>
         <Link
@@ -195,12 +202,12 @@ export default async function RoomsPage({
         </div>
       )}
 
-      <ul className="mt-6 divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white">
+      <ul aria-label="Daftar kamar" className="mt-6 divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white">
         {rooms.length === 0 ? (
           <li className="p-6 text-sm text-zinc-600">Belum ada kamar.</li>
         ) : (
           rooms.map((r) => (
-            <li key={r.id} className="px-6 py-3 text-sm">
+             <li key={r.id} className="px-4 py-4 text-sm sm:px-6">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <span className="font-medium">{r.name}</span>
@@ -211,19 +218,21 @@ export default async function RoomsPage({
                     </span>
                   )}
                   <p className="text-[10px] text-zinc-400">
-                    {r.building?.name ?? '—'} / {r.floor?.name ?? '—'} ·{' '}
-                    {r.roomType?.name ?? 'tipe?'}
+                     {r.building?.name ?? 'Gedung belum diatur'} / {r.floor?.name ?? 'Lantai belum diatur'} ·{' '}
+                     {r.roomType?.name ?? 'Tipe belum diatur'}
                   </p>
                 </div>
                 <div className="text-right text-xs text-zinc-600">
-                  <div>{r.status}</div>
+                   <div className={`inline-block rounded-full px-2 py-0.5 font-medium ${ROOM_STATUS[r.status]?.className ?? 'bg-zinc-100 text-zinc-700'}`}>
+                     {ROOM_STATUS[r.status]?.label ?? r.status}
+                   </div>
                   <div>{formatIdr(r.rentAmount)}</div>
                 </div>
               </div>
               {propertyId && (
                 <form
                   action={assignRoomAction}
-                  className="mt-2 flex flex-wrap gap-1 border-t border-zinc-50 pt-2"
+                  className="mt-3 grid gap-2 border-t border-zinc-100 pt-3 sm:grid-cols-4"
                 >
                   <input type="hidden" name="id" value={r.id} />
                   <input type="hidden" name="workspaceId" value={workspaceId} />
@@ -231,7 +240,8 @@ export default async function RoomsPage({
                   <select
                     name="buildingId"
                     defaultValue={r.buildingId ?? ''}
-                    className="rounded border px-1 py-0.5 text-[10px]"
+                    aria-label="Gedung"
+                    className="rounded-lg border px-2 py-2 text-xs"
                   >
                     <option value="">Gedung</option>
                     {buildings.map((b) => (
@@ -243,7 +253,8 @@ export default async function RoomsPage({
                   <select
                     name="floorId"
                     defaultValue={r.floorId ?? ''}
-                    className="rounded border px-1 py-0.5 text-[10px]"
+                    aria-label="Lantai"
+                    className="rounded-lg border px-2 py-2 text-xs"
                   >
                     <option value="">Lantai</option>
                     {floors.map((f) => (
@@ -255,7 +266,8 @@ export default async function RoomsPage({
                   <select
                     name="roomTypeId"
                     defaultValue={r.roomType?.id ?? ''}
-                    className="rounded border px-1 py-0.5 text-[10px]"
+                    aria-label="Tipe kamar"
+                    className="rounded-lg border px-2 py-2 text-xs"
                   >
                     <option value="">Tipe</option>
                     {roomTypes.map((t) => (
@@ -266,9 +278,9 @@ export default async function RoomsPage({
                   </select>
                   <button
                     type="submit"
-                    className="rounded bg-zinc-900 px-2 py-0.5 text-[10px] text-white"
+                    className="rounded-lg bg-zinc-900 px-3 py-2 text-xs text-white"
                   >
-                    Assign
+                    Simpan penempatan
                   </button>
                 </form>
               )}
@@ -351,10 +363,10 @@ export default async function RoomsPage({
             action={bulkRoomAction}
             className="rounded-xl border border-zinc-200 bg-white p-6"
           >
-            <h2 className="font-medium">Bulk berurutan</h2>
+            <h2 className="font-medium">Buat kamar berurutan</h2>
             <input type="hidden" name="workspaceId" value={workspaceId} />
             <input type="hidden" name="propertyId" value={propertyId} />
-            <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
+            <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
               <label className="flex flex-col gap-1">
                 <span>Prefix</span>
                 <input
@@ -400,7 +412,7 @@ export default async function RoomsPage({
               type="submit"
               className="mt-4 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white"
             >
-              Buat bulk
+              Buat kamar
             </button>
           </form>
         </div>

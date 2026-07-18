@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { Alert, ConfirmSubmitButton, PendingSubmitButton } from '@/components/ui';
 import { requireAuth } from '@/lib/auth';
 import {
   apiFetch,
@@ -172,9 +173,7 @@ export default async function BillingPage({
       )}
 
       {error && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
-          {error}
-        </div>
+        <Alert variant="error" className="mt-4">{error}</Alert>
       )}
 
       <ul className="mt-6 divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white">
@@ -213,12 +212,12 @@ export default async function BillingPage({
                           name="workspaceId"
                           value={workspaceId}
                         />
-                        <button
-                          type="submit"
+                        <PendingSubmitButton
                           className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white"
+                          pendingLabel="Issuing..."
                         >
                           Issue
-                        </button>
+                        </PendingSubmitButton>
                       </form>
                     )}
                     {(inv.status === 'OPEN' ||
@@ -248,12 +247,12 @@ export default async function BillingPage({
                               className="w-full rounded border border-zinc-300 px-2 py-1 text-xs"
                             />
                             <ProofUploadField workspaceId={workspaceId} />
-                            <button
-                              type="submit"
+                            <PendingSubmitButton
                               className="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white"
+                              pendingLabel="Mencatat..."
                             >
                               Catat + OCR
-                            </button>
+                            </PendingSubmitButton>
                           </div>
                         </form>
                       )}
@@ -280,12 +279,16 @@ export default async function BillingPage({
                             name="workspaceId"
                             value={workspaceId}
                           />
-                          <button
-                            type="submit"
+                          <ConfirmSubmitButton
                             className="rounded-lg border border-zinc-300 px-3 py-1.5 text-xs"
+                            title="Void tagihan?"
+                            description={`Tagihan ${inv.invoiceNumber} akan dibatalkan dan tidak dapat dibayar.`}
+                            confirmLabel="Ya, void"
+                            pendingLabel="Membatalkan..."
+                            danger
                           >
                             Void
-                          </button>
+                          </ConfirmSubmitButton>
                         </form>
                       </>
                     )}

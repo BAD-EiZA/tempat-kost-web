@@ -14,6 +14,7 @@ export function SwRegister() {
     }
     function onBip(e: Event) {
       e.preventDefault();
+      if (sessionStorage.getItem('pwa-install-dismissed')) return;
       const ev = e as Event & {
         prompt: () => Promise<void>;
       };
@@ -27,15 +28,34 @@ export function SwRegister() {
   if (!canInstall || !deferred) return null;
 
   return (
-    <button
-      type="button"
-      onClick={async () => {
-        await deferred.prompt();
-        setCanInstall(false);
-      }}
-      className="fixed bottom-4 right-4 z-40 rounded-full bg-zinc-900 px-4 py-2 text-xs font-medium text-white shadow-lg"
+    <div
+      role="region"
+      aria-label="Instal aplikasi"
+      className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-[calc(1rem+env(safe-area-inset-right))] z-40 flex items-center rounded-full bg-zinc-900 text-xs font-medium text-white shadow-lg"
     >
-      Install app
-    </button>
+      <button
+        type="button"
+        onClick={async () => {
+          await deferred.prompt();
+          setCanInstall(false);
+          setDeferred(null);
+        }}
+        className="rounded-l-full px-4 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900"
+      >
+        Install app
+      </button>
+      <button
+        type="button"
+        aria-label="Tutup saran instal aplikasi"
+        onClick={() => {
+          sessionStorage.setItem('pwa-install-dismissed', 'true');
+          setCanInstall(false);
+          setDeferred(null);
+        }}
+        className="rounded-r-full border-l border-white/20 px-3 py-2 text-zinc-300 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900"
+      >
+        ×
+      </button>
+    </div>
   );
 }

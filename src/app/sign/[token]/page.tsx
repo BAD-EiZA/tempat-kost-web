@@ -18,6 +18,8 @@ export default function SignContractPage() {
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [hasSignature, setHasSignature] = useState(false);
+  const [typedSignature, setTypedSignature] = useState(false);
   const drawing = useRef(false);
 
   useEffect(() => {
@@ -54,6 +56,7 @@ export default function SignContractPage() {
       const p = pos(e);
       ctx.lineTo(p.x, p.y);
       ctx.stroke();
+      setHasSignature(true);
     };
     const up = () => {
       drawing.current = false;
@@ -73,11 +76,13 @@ export default function SignContractPage() {
   async function submit() {
     setError(null);
     const c = canvasRef.current;
-    if (!c || !name.trim()) {
+    if (!c || !name.trim() || (!hasSignature && !typedSignature)) {
       setError('Nama & tanda tangan wajib');
       return;
     }
-    const signatureData = c.toDataURL('image/png');
+    const signatureData = typedSignature
+      ? `data:text/plain;charset=utf-8,${encodeURIComponent(name.trim())}`
+      : c.toDataURL('image/png');
     const res = await fetch(`${API}/v1/public/sign/${token}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -103,7 +108,7 @@ export default function SignContractPage() {
       <h1 className="text-xl font-semibold">Tanda tangan kontrak</h1>
       <p className="text-sm text-zinc-600">{doc.leaseNumber}</p>
       <div
-        className="prose mt-6 max-w-none rounded-xl border bg-white p-4 text-sm"
+        className="tk-contract mt-6 max-w-none rounded-xl border bg-white p-4 text-sm"
         dangerouslySetInnerHTML={{ __html: doc.bodyHtml }}
       />
       {done ? (
@@ -120,14 +125,41 @@ export default function SignContractPage() {
               className="mt-1 w-full rounded border px-3 py-2"
             />
           </label>
-          <p className="text-xs text-zinc-500">Tanda tangan di kotak:</p>
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-medium">Metode tanda tangan</legend>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={typedSignature}
+                onChange={(event) => setTypedSignature(event.target.checked)}
+              />
+              Gunakan nama di atas sebagai tanda tangan elektronik
+            </label>
+          </fieldset>
+          <p id="signature-help" className="text-xs text-zinc-500">
+            Gambar tanda tangan di kotak, atau pilih tanda tangan elektronik berbasis nama.
+          </p>
           <canvas
             ref={canvasRef}
             width={500}
             height={160}
+            role="img"
+            aria-label="Area tanda tangan"
+            aria-describedby="signature-help"
             className="w-full touch-none rounded border bg-zinc-50"
           />
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          <button
+            type="button"
+            onClick={() => {
+              const canvas = canvasRef.current;
+              canvas?.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
+              setHasSignature(false);
+            }}
+            className="rounded-lg border px-3 py-2 text-sm"
+          >
+            Hapus tanda tangan
+          </button>
+          {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
           <button
             type="button"
             onClick={() => void submit()}

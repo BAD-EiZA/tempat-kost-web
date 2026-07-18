@@ -12,6 +12,43 @@ type Role = {
   permissions: Array<{ resource: string; action: string }>;
 };
 
+function Matrix({
+  catalog,
+  value,
+  onChange,
+}: {
+  catalog: { resources: string[]; actions: string[] };
+  value: Record<string, boolean>;
+  onChange: (v: Record<string, boolean>) => void;
+}) {
+  return (
+    <div className="mt-2 max-h-56 overflow-auto text-xs">
+      {catalog.resources.map((resource) => (
+        <div key={resource} className="mb-2">
+          <p className="font-medium">{resource}</p>
+          <div className="flex flex-wrap gap-2">
+            {catalog.actions.map((action) => {
+              const permission = `${resource}:${action}`;
+              return (
+                <label key={permission} className="flex items-center gap-1">
+                  <input
+                    type="checkbox"
+                    checked={!!value[permission]}
+                    onChange={(event) =>
+                      onChange({ ...value, [permission]: event.target.checked })
+                    }
+                  />
+                  {action}
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function RolesInner() {
   const sp = useSearchParams();
   const workspaceId = sp.get('workspaceId') ?? '';
@@ -56,7 +93,8 @@ function RolesInner() {
   }
 
   useEffect(() => {
-    void load();
+    const timeout = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceId]);
 
@@ -129,42 +167,6 @@ function RolesInner() {
     await load();
   }
 
-  function Matrix({
-    value,
-    onChange,
-  }: {
-    value: Record<string, boolean>;
-    onChange: (v: Record<string, boolean>) => void;
-  }) {
-    if (!catalog) return null;
-    return (
-      <div className="mt-2 max-h-56 overflow-auto text-xs">
-        {catalog.resources.map((res) => (
-          <div key={res} className="mb-2">
-            <p className="font-medium">{res}</p>
-            <div className="flex flex-wrap gap-2">
-              {catalog.actions.map((act) => {
-                const k = `${res}:${act}`;
-                return (
-                  <label key={k} className="flex items-center gap-1">
-                    <input
-                      type="checkbox"
-                      checked={!!value[k]}
-                      onChange={(e) =>
-                        onChange({ ...value, [k]: e.target.checked })
-                      }
-                    />
-                    {act}
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
   return (
     <div>
       <h1 className="text-2xl font-semibold">Custom roles</h1>
@@ -207,7 +209,13 @@ function RolesInner() {
             </div>
             {editId === r.id && (
               <div className="mt-3 border-t pt-3">
-                <Matrix value={editSelected} onChange={setEditSelected} />
+                {catalog && (
+                  <Matrix
+                    catalog={catalog}
+                    value={editSelected}
+                    onChange={setEditSelected}
+                  />
+                )}
                 <div className="mt-2 flex gap-2">
                   <button
                     type="button"
@@ -247,7 +255,11 @@ function RolesInner() {
               className="rounded border px-3 py-2 text-sm"
             />
           </div>
-          <Matrix value={selected} onChange={setSelected} />
+          <Matrix
+            catalog={catalog}
+            value={selected}
+            onChange={setSelected}
+          />
           <button
             type="button"
             onClick={() => void createRole()}

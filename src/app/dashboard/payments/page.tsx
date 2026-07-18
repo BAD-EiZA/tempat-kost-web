@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { Alert, ConfirmSubmitButton } from '@/components/ui';
 import { requireAuth } from '@/lib/auth';
 import {
   confirmPayment,
@@ -95,9 +96,7 @@ export default async function PaymentsPage({
       )}
 
       {error && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
-          {error}
-        </div>
+        <Alert variant="error" className="mt-4">{error}</Alert>
       )}
 
       <ul className="mt-6 divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white">
@@ -143,12 +142,15 @@ export default async function PaymentsPage({
                         name="workspaceId"
                         value={workspaceId}
                       />
-                      <button
-                        type="submit"
+                      <ConfirmSubmitButton
                         className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white"
+                        title="Konfirmasi pembayaran?"
+                        description={`Pembayaran ${p.paymentNumber} akan dikonfirmasi dan dialokasikan ke tagihan terkait.`}
+                        confirmLabel="Ya, konfirmasi"
+                        pendingLabel="Mengonfirmasi..."
                       >
                         Konfirmasi
-                      </button>
+                      </ConfirmSubmitButton>
                     </form>
                     <form action={rejectAction}>
                       <input type="hidden" name="id" value={p.id} />
@@ -157,12 +159,16 @@ export default async function PaymentsPage({
                         name="workspaceId"
                         value={workspaceId}
                       />
-                      <button
-                        type="submit"
+                      <ConfirmSubmitButton
                         className="rounded-lg border border-zinc-300 px-3 py-1.5 text-xs"
+                        title="Tolak pembayaran?"
+                        description={`Pembayaran ${p.paymentNumber} akan ditolak. Tindakan ini mengubah status pembayaran.`}
+                        confirmLabel="Ya, tolak"
+                        pendingLabel="Menolak..."
+                        danger
                       >
                         Tolak
-                      </button>
+                      </ConfirmSubmitButton>
                     </form>
                   </div>
                 )}

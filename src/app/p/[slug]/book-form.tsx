@@ -30,10 +30,12 @@ export function PublicBookForm({
   slug,
   rooms,
   accent,
+  accentForeground,
 }: {
   slug: string;
   rooms: Room[];
   accent: string;
+  accentForeground: string;
 }) {
   const [roomId, setRoomId] = useState(rooms[0]?.id ?? '');
   const [fullName, setFullName] = useState('');
@@ -134,6 +136,8 @@ export function PublicBookForm({
       <label className="block text-sm">
         Nama lengkap
         <input
+          name="name"
+          autoComplete="name"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
           required
@@ -143,6 +147,10 @@ export function PublicBookForm({
       <label className="block text-sm">
         WhatsApp / telepon
         <input
+          type="tel"
+          name="tel"
+          inputMode="tel"
+          autoComplete="tel"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           required
@@ -153,18 +161,20 @@ export function PublicBookForm({
         Email (opsional)
         <input
           type="email"
+          name="email"
+          autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="mt-1 w-full rounded border px-3 py-2"
         />
       </label>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      {msg && <p className="text-sm text-emerald-700">{msg}</p>}
+      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+      {msg && <p role="status" className="text-sm text-emerald-700">{msg}</p>}
       <button
         type="submit"
         disabled={busy}
         className="w-full rounded-xl py-3 text-sm font-medium text-white disabled:opacity-50"
-        style={{ backgroundColor: accent }}
+        style={{ backgroundColor: accent, color: accentForeground }}
       >
         {busy ? 'Memproses…' : 'Booking & bayar fee'}
       </button>
