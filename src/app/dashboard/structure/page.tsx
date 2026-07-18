@@ -1,0 +1,242 @@
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { requireAuth } from '@/lib/auth';
+import { apiFetch, listProperties, listWorkspaces } from '@/lib/api';
+
+async function createBuilding(formData: FormData) {
+  'use server';
+  await requireAuth();
+  const workspaceId = String(formData.get('workspaceId') ?? '');
+  const propertyId = String(formData.get('propertyId') ?? '');
+  const name = String(formData.get('name') ?? '').trim();
+  if (!propertyId || !name) return;
+  await apiFetch('/v1/structure/buildings', {
+    method: 'POST',
+    body: JSON.stringify({ propertyId, name, code: String(formData.get('code') ?? '') || undefined }),
+  });
+  redirect(`/dashboard/structure?workspaceId=${workspaceId}&propertyId=${propertyId}`);
+}
+
+async function createFloor(formData: FormData) {
+  'use server';
+  await requireAuth();
+  const workspaceId = String(formData.get('workspaceId') ?? '');
+  const propertyId = String(formData.get('propertyId') ?? '');
+  const buildingId = String(formData.get('buildingId') ?? '');
+  const name = String(formData.get('name') ?? '').trim();
+  if (!buildingId || !name) return;
+  await apiFetch('/v1/structure/floors', {
+    method: 'POST',
+    body: JSON.stringify({
+      buildingId,
+      name,
+      level: Number(formData.get('level') ?? 1) || 1,
+    }),
+  });
+  redirect(`/dashboard/structure?workspaceId=${workspaceId}&propertyId=${propertyId}`);
+}
+
+async function createRoomType(formData: FormData) {
+  'use server';
+  await requireAuth();
+  const workspaceId = String(formData.get('workspaceId') ?? '');
+  const name = String(formData.get('name') ?? '').trim();
+  if (!workspaceId || !name) return;
+  await apiFetch('/v1/structure/room-types', {
+    method: 'POST',
+    body: JSON.stringify({
+      workspaceId,
+      propertyId: String(formData.get('propertyId') ?? '') || undefined,
+      name,
+      baseRent: Number(formData.get('baseRent') ?? 0) || 0,
+      defaultDeposit: Number(formData.get('defaultDeposit') ?? 0) || 0,
+      capacity: Number(formData.get('capacity') ?? 1) || 1,
+    }),
+  });
+  redirect(`/dashboard/structure?workspaceId=${workspaceId}`);
+}
+
+export default async function StructurePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ workspaceId?: string; propertyId?: string }>;
+}) {
+  await requireAuth();
+  const sp = await searchParams;
+  let workspaces: Awaited<ReturnType<typeof listWorkspaces>> = [];
+  let properties: Awaited<ReturnType<typeof listProperties>> = [];
+  let workspaceId = sp.workspaceId ?? '';
+  let propertyId = sp.propertyId ?? '';
+  let buildings: Array<{
+    id: string;
+    name: string;
+    floors: Array<{ id: string; name: string; level: number }>;
+  }> = [];
+  let roomTypes: Array<{
+    id: string;
+    name: string;
+    baseRent: string | number;
+    capacity: number;
+  }> = [];
+  let error: string | null = null;
+
+  try {
+    workspaces = await listWorkspaces();
+    if (!workspaceId && workspaces[0]) workspaceId = workspaces[0].id;
+    if (workspaceId) {
+      properties = await listProperties(workspaceId);
+      if (!propertyId && properties[0]) propertyId = properties[0].id;
+      roomTypes = await apiFetch<typeof roomTypes>(
+        `/v1/structure/room-types?workspaceId=${workspaceId}`,
+      );
+      if (propertyId) {
+        buildings = await apiFetch<typeof buildings>(
+          `/v1/structure/buildings?propertyId=${propertyId}`,
+        );
+      }
+    }
+  } catch (e) {
+    error = e instanceof Error ? e.message : 'Gagal';
+  }
+
+  return (
+    <>
+      <h1 className="text-2xl font-semibold">Struktur & tipe kamar</h1>
+      {workspaces.length > 0 && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {workspaces.map((ws) => (
+            <Link
+              key={ws.id}
+              href={`/dashboard/structure?workspaceId=${ws.id}`}
+              className={`rounded-full px-3 py-1 text-xs font-medium ${
+                ws.id === workspaceId ? 'bg-zinc-900 text-white' : 'bg-zinc-100'
+              }`}
+            >
+              {ws.name}
+            </Link>
+          ))}
+        </div>
+      )}
+      {properties.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {properties.map((p) => (
+            <Link
+              key={p.id}
+              href={`/dashboard/structure?workspaceId=${workspaceId}&propertyId=${p.id}`}
+              className={`rounded-full px-3 py-1 text-xs ${
+                p.id === propertyId ? 'bg-zinc-800 text-white' : 'bg-zinc-50'
+              }`}
+            >
+              {p.name}
+            </Link>
+          ))}
+        </div>
+      )}
+      {error && (
+        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
+          {error}
+        </div>
+      )}
+
+      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+        <section className="rounded-xl border bg-white p-5">
+          <h2 className="font-medium">Gedung / lantai</h2>
+          <ul className="mt-2 space-y-2 text-sm">
+            {buildings.map((b) => (
+              <li key={b.id} className="rounded border border-zinc-100 p-2">
+                <p className="font-medium">{b.name}</p>
+                <p className="text-xs text-zinc-500">
+                  Lantai: {b.floors.map((f) => f.name).join(', ') || '—'}
+                </p>
+                {workspaceId && propertyId && (
+                  <form action={createFloor} className="mt-2 flex gap-1">
+                    <input type="hidden" name="workspaceId" value={workspaceId} />
+                    <input type="hidden" name="propertyId" value={propertyId} />
+                    <input type="hidden" name="buildingId" value={b.id} />
+                    <input
+                      name="name"
+                      required
+                      placeholder="Lantai 1"
+                      className="flex-1 rounded border px-2 py-1 text-xs"
+                    />
+                    <input
+                      name="level"
+                      type="number"
+                      defaultValue={b.floors.length + 1}
+                      className="w-14 rounded border px-1 text-xs"
+                    />
+                    <button type="submit" className="rounded bg-zinc-900 px-2 text-xs text-white">
+                      +
+                    </button>
+                  </form>
+                )}
+              </li>
+            ))}
+          </ul>
+          {workspaceId && propertyId && (
+            <form action={createBuilding} className="mt-3 flex gap-2">
+              <input type="hidden" name="workspaceId" value={workspaceId} />
+              <input type="hidden" name="propertyId" value={propertyId} />
+              <input
+                name="name"
+                required
+                placeholder="Nama gedung/blok"
+                className="flex-1 rounded border px-2 py-1 text-sm"
+              />
+              <button type="submit" className="rounded bg-zinc-900 px-3 py-1 text-sm text-white">
+                + Gedung
+              </button>
+            </form>
+          )}
+        </section>
+
+        <section className="rounded-xl border bg-white p-5">
+          <h2 className="font-medium">Tipe kamar</h2>
+          <ul className="mt-2 divide-y text-sm">
+            {roomTypes.map((rt) => (
+              <li key={rt.id} className="py-2">
+                {rt.name} · cap {rt.capacity} · Rp{' '}
+                {Number(rt.baseRent).toLocaleString('id-ID')}
+              </li>
+            ))}
+          </ul>
+          {workspaceId && (
+            <form action={createRoomType} className="mt-3 grid gap-2">
+              <input type="hidden" name="workspaceId" value={workspaceId} />
+              <input type="hidden" name="propertyId" value={propertyId} />
+              <input
+                name="name"
+                required
+                placeholder="Standard / Deluxe"
+                className="rounded border px-2 py-1 text-sm"
+              />
+              <div className="flex gap-2">
+                <input
+                  name="baseRent"
+                  type="number"
+                  placeholder="Sewa"
+                  className="flex-1 rounded border px-2 py-1 text-sm"
+                />
+                <input
+                  name="defaultDeposit"
+                  type="number"
+                  placeholder="Deposit"
+                  className="flex-1 rounded border px-2 py-1 text-sm"
+                />
+                <input
+                  name="capacity"
+                  type="number"
+                  defaultValue={1}
+                  className="w-16 rounded border px-2 py-1 text-sm"
+                />
+              </div>
+              <button type="submit" className="rounded bg-zinc-900 px-3 py-1 text-sm text-white">
+                + Tipe kamar
+              </button>
+            </form>
+          )}
+        </section>
+      </div>
+    </>
+  );
+}

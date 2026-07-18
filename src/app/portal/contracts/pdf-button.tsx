@@ -1,0 +1,56 @@
+'use client';
+
+import { useState } from 'react';
+
+export function ContractPdfButton({
+  contractId,
+  tenantId,
+}: {
+  contractId: string;
+  tenantId: string;
+}) {
+  const [error, setError] = useState<string | null>(null);
+
+  async function download() {
+    setError(null);
+    try {
+      const res = await fetch('/api/proxy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          path: `/v1/portal/contracts/${contractId}/pdf?tenantId=${encodeURIComponent(tenantId)}`,
+          method: 'GET',
+        }),
+      });
+      const data = (await res.json()) as {
+        pdfBase64?: string;
+        fileName?: string;
+        message?: string;
+      };
+      if (!res.ok || !data.pdfBase64) {
+        throw new Error(data.message ?? 'PDF gagal');
+      }
+      const bin = atob(data.pdfBase64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = data.fileName ?? 'kontrak.pdf';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error');
+    }
+  }
+
+  return (
+    <span>
+      <button type="button" onClick={() => void download()} className="underline">
+        PDF
+      </button>
+      {error && <span className="ml-1 text-red-600">{error}</span>}
+    </span>
+  );
+}

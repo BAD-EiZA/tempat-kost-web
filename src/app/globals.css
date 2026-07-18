@@ -1,8 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fafafa;
+  --foreground: #09090b;
+  --card: #ffffff;
+  --muted: #71717a;
+  --ring: #818cf8;
+  --accent: #4f46e5;
 }
 
 @theme inline {
@@ -10,17 +14,123 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --animate-spotlight: spotlight 2s ease 0.75s 1 forwards;
+  --animate-scroll: scroll var(--animation-duration, 40s) var(--animation-direction, forwards) linear infinite;
+  --animate-meteor-effect: meteor 5s linear infinite;
+  --animate-shimmer: shimmer 2.5s linear infinite;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@keyframes spotlight {
+  0% {
+    opacity: 0;
+    transform: translate(-72%, -62%) scale(0.5);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -40%) scale(1);
+  }
+}
+
+@keyframes scroll {
+  to {
+    transform: translate(calc(-50% - 0.5rem));
+  }
+}
+
+@keyframes meteor {
+  0% {
+    transform: rotate(215deg) translateX(0);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(215deg) translateX(-500px);
+    opacity: 0;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.animate-spotlight {
+  animation: spotlight 2s ease 0.75s 1 forwards;
+}
+
+.animate-scroll {
+  animation: scroll var(--animation-duration, 40s)
+    var(--animation-direction, forwards) linear infinite;
+}
+
+.animate-meteor-effect {
+  animation: meteor 5s linear infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 2.5s linear infinite;
+}
+
+/* Design tokens */
+.tk-card {
+  border-radius: 1rem;
+  border: 1px solid rgb(228 228 231 / 0.9);
+  background: var(--card);
+  box-shadow:
+    0 1px 0 0 rgb(0 0 0 / 0.03),
+    0 8px 24px -12px rgb(0 0 0 / 0.12);
+}
+
+.tk-input {
+  border-radius: 0.75rem;
+  border: 1px solid #e4e4e7;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.tk-input:focus {
+  border-color: #818cf8;
+  box-shadow: 0 0 0 3px rgb(129 140 248 / 0.25);
+}
+
+.tk-btn {
+  border-radius: 0.75rem;
+  background: #18181b;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background 0.15s, transform 0.1s;
+}
+.tk-btn:hover {
+  background: #27272a;
+}
+.tk-btn:active {
+  transform: translateY(1px);
+}
+.tk-btn:disabled {
+  opacity: 0.5;
+}
+
+/* Dashboard list polish */
+.tk-list {
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid rgb(228 228 231 / 0.9);
+  background: white;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
 }
