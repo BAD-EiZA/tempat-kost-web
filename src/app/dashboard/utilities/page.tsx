@@ -1,12 +1,17 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/auth';
+import {
+  EmptyState,
+  PageHeader,
+  WorkspaceChips,
+} from '@/components/ui';
 import {
   createUtilityPolicy,
   listProperties,
   listUtilityPolicies,
   listWorkspaces,
 } from '@/lib/api';
+import { formatIdr } from '@/lib/format';
 
 async function createAction(formData: FormData) {
   'use server';
@@ -61,65 +66,63 @@ export default async function UtilitiesPage({
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">Listrik / Utilitas</h1>
-      <p className="mt-1 text-sm text-zinc-600">
-        Kebijakan per properti: TENANT / OWNER / SHARED / INCLUDED.
-      </p>
+      <PageHeader
+        title="Listrik / Utilitas"
+        description="Kebijakan per properti: tenant, owner, shared, atau included."
+      />
 
       {workspaces.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {workspaces.map((ws) => (
-            <Link
-              key={ws.id}
-              href={`/dashboard/utilities?workspaceId=${ws.id}`}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
-                ws.id === workspaceId
-                  ? 'bg-zinc-900 text-white'
-                  : 'bg-zinc-100 text-zinc-700'
-              }`}
-            >
-              {ws.name}
-            </Link>
-          ))}
-        </div>
+        <WorkspaceChips
+          workspaces={workspaces}
+          workspaceId={workspaceId}
+          hrefFor={(id) => `/dashboard/utilities?workspaceId=${id}`}
+        />
       )}
 
       {error && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
+        <div className="tk-alert mt-4" data-variant="warning">
           {error}
         </div>
       )}
 
-      <ul className="mt-6 divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white">
-        {policies.length === 0 ? (
-          <li className="p-6 text-sm text-zinc-600">Belum ada kebijakan.</li>
-        ) : (
-          policies.map((p) => (
-            <li key={p.id} className="px-6 py-4 text-sm">
-              <p className="font-medium">
-                {p.property?.name ?? p.propertyId} · {p.payerType}
+      {policies.length === 0 ? (
+        <EmptyState
+          className="mt-6"
+          title="Belum ada kebijakan"
+          body="Atur bagaimana listrik/air ditagih per properti."
+        />
+      ) : (
+        <ul className="mt-6 space-y-2">
+          {policies.map((p) => (
+            <li key={p.id} className="tk-card px-5 py-4 text-sm">
+              <p className="font-semibold text-zinc-900">
+                {p.property?.name ?? p.propertyId}
               </p>
-              <p className="text-xs text-zinc-500">
-                {p.billingMethod}
-                {p.ratePerUnit != null ? ` · Rp${p.ratePerUnit}/kWh` : ''}
+              <p className="mt-1 text-xs text-zinc-500">
+                {p.payerType} · {p.billingMethod}
+                {p.ratePerUnit != null
+                  ? ` · ${formatIdr(Number(p.ratePerUnit))}/kWh`
+                  : ''}
                 {p.fixedMonthlyFee != null
-                  ? ` · fixed ${p.fixedMonthlyFee}`
+                  ? ` · fixed ${formatIdr(Number(p.fixedMonthlyFee))}`
                   : ''}
                 {p.ownerUnitAllowance != null
                   ? ` · kuota owner ${p.ownerUnitAllowance} kWh`
                   : ''}
               </p>
             </li>
-          ))
-        )}
-      </ul>
+          ))}
+        </ul>
+      )}
 
       {workspaceId && properties.length > 0 && (
         <form
           action={createAction}
-          className="mt-8 rounded-xl border border-zinc-200 bg-white p-6"
+          className="tk-card mt-8 p-6"
         >
-          <h2 className="font-medium">Tambah kebijakan</h2>
+          <h2 className="text-base font-semibold text-zinc-900">
+            Tambah kebijakan
+          </h2>
           <input type="hidden" name="workspaceId" value={workspaceId} />
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1 text-sm sm:col-span-2">
@@ -127,7 +130,7 @@ export default async function UtilitiesPage({
               <select
                 name="propertyId"
                 required
-                className="rounded-lg border border-zinc-300 px-3 py-2"
+                className="tk-input"
               >
                 {properties.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -140,7 +143,7 @@ export default async function UtilitiesPage({
               <span>Penanggung</span>
               <select
                 name="payerType"
-                className="rounded-lg border border-zinc-300 px-3 py-2"
+                className="tk-input"
                 defaultValue="TENANT"
               >
                 <option value="TENANT">Penyewa</option>
@@ -153,7 +156,7 @@ export default async function UtilitiesPage({
               <span>Metode</span>
               <select
                 name="billingMethod"
-                className="rounded-lg border border-zinc-300 px-3 py-2"
+                className="tk-input"
                 defaultValue="FIXED_MONTHLY"
               >
                 <option value="FIXED_MONTHLY">Fixed bulanan</option>
@@ -169,7 +172,7 @@ export default async function UtilitiesPage({
                 min={0}
                 step={1}
                 placeholder="1700"
-                className="rounded-lg border border-zinc-300 px-3 py-2"
+                className="tk-input"
               />
             </label>
             <label className="flex flex-col gap-1 text-sm">
@@ -179,24 +182,24 @@ export default async function UtilitiesPage({
                 type="number"
                 min={0}
                 step={1000}
-                className="rounded-lg border border-zinc-300 px-3 py-2"
+                className="tk-input"
               />
             </label>
             <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-              <span>Kuota owner (kWh) — untuk SHARED</span>
+              <span>Kuota owner (kWh) - untuk SHARED</span>
               <input
                 name="ownerUnitAllowance"
                 type="number"
                 min={0}
                 step={1}
                 placeholder="20"
-                className="rounded-lg border border-zinc-300 px-3 py-2"
+                className="tk-input"
               />
             </label>
           </div>
           <button
             type="submit"
-            className="mt-4 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white"
+            className="tk-btn mt-4"
           >
             Simpan
           </button>

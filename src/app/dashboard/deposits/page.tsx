@@ -1,22 +1,18 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/auth';
+import {
+  EmptyState,
+  PageHeader,
+  StatusBadge,
+  WorkspaceChips,
+} from '@/components/ui';
 import {
   apiFetch,
   listDeposits,
   listWorkspaces,
   recordDepositTxn,
 } from '@/lib/api';
-
-function formatIdr(n: string | number) {
-  const v = typeof n === 'string' ? Number(n) : n;
-  if (Number.isNaN(v)) return String(n);
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(v);
-}
+import { formatIdr } from '@/lib/format';
 
 async function recordAction(formData: FormData) {
   'use server';
@@ -71,62 +67,64 @@ export default async function DepositsPage({
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">Deposit</h1>
-      <p className="mt-1 text-sm text-zinc-600">
-        Ledger per kontrak. Aktifkan lease → akun deposit otomatis (CHARGED).
-      </p>
+      <PageHeader
+        title="Deposit"
+        description="Ledger per kontrak. Aktifkan lease untuk membuat akun deposit."
+      />
 
       {workspaces.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {workspaces.map((ws) => (
-            <Link
-              key={ws.id}
-              href={`/dashboard/deposits?workspaceId=${ws.id}`}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
-                ws.id === workspaceId
-                  ? 'bg-zinc-900 text-white'
-                  : 'bg-zinc-100 text-zinc-700'
-              }`}
-            >
-              {ws.name}
-            </Link>
-          ))}
-        </div>
+        <WorkspaceChips
+          workspaces={workspaces}
+          workspaceId={workspaceId}
+          hrefFor={(id) => `/dashboard/deposits?workspaceId=${id}`}
+        />
       )}
 
       {error && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
+        <div className="tk-alert mt-4" data-variant="warning">
           {error}
         </div>
       )}
 
+      {deposits.length === 0 ? (
+        <EmptyState
+          className="mt-6"
+          title="Belum ada akun deposit"
+          body="Aktifkan kontrak dulu agar akun deposit dibuat otomatis."
+        />
+      ) : (
       <ul className="mt-6 space-y-4">
-        {deposits.length === 0 ? (
-          <li className="rounded-xl border border-zinc-200 bg-white p-6 text-sm text-zinc-600">
-            Belum ada akun deposit. Aktifkan kontrak dulu.
-          </li>
-        ) : (
-          deposits.map((d) => (
+          {deposits.map((d) => (
             <li
               key={d.id}
-              className="rounded-xl border border-zinc-200 bg-white p-6 text-sm"
+              className="tk-card p-6 text-sm"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="font-medium">
-                    {d.tenant?.fullName} · {d.lease?.leaseNumber}
+                  <p className="font-semibold text-zinc-900">
+                    {d.tenant?.fullName}
                   </p>
-                  <p className="text-xs text-zinc-500">
-                    Saldo {formatIdr(d.balance)} · lease {d.lease?.status}
+                  <p className="text-xs text-zinc-500">{d.lease?.leaseNumber}</p>
+                  <p className="mt-2 text-lg font-semibold tabular-nums">
+                    {formatIdr(d.balance)}
                   </p>
+                  <p className="text-xs text-zinc-500">Saldo deposit</p>
                 </div>
+                {d.lease?.status ? (
+                  <StatusBadge status={d.lease.status} kind="lease" />
+                ) : null}
               </div>
               {d.transactions && d.transactions.length > 0 && (
                 <ul className="mt-3 space-y-1 border-t border-zinc-100 pt-3 text-xs text-zinc-500">
                   {d.transactions.map((t) => (
-                    <li key={t.id}>
-                      {t.type} {formatIdr(t.amount)}
-                      {t.reason ? ` — ${t.reason}` : ''}
+                    <li key={t.id} className="flex justify-between gap-2">
+                      <span>
+                        {t.type}
+                        {t.reason ? ` · ${t.reason}` : ''}
+                      </span>
+                      <span className="tabular-nums font-medium text-zinc-700">
+                        {formatIdr(t.amount)}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -136,7 +134,7 @@ export default async function DepositsPage({
                 <input type="hidden" name="depositAccountId" value={d.id} />
                 <select
                   name="type"
-                  className="rounded border border-zinc-300 px-2 py-1 text-xs"
+                  className="tk-select !py-1 !text-xs"
                   defaultValue="PAID"
                 >
                   <option value="PAID">Bayar deposit</option>
@@ -151,17 +149,14 @@ export default async function DepositsPage({
                   step={1000}
                   required
                   placeholder="Nominal"
-                  className="w-28 rounded border border-zinc-300 px-2 py-1 text-xs"
+                  className="tk-input w-28 !py-1 !text-xs"
                 />
                 <input
                   name="reason"
                   placeholder="Alasan"
-                  className="min-w-[8rem] flex-1 rounded border border-zinc-300 px-2 py-1 text-xs"
+                  className="tk-input min-w-[8rem] flex-1 !py-1 !text-xs"
                 />
-                <button
-                  type="submit"
-                  className="rounded bg-zinc-900 px-3 py-1 text-xs text-white"
-                >
+                <button type="submit" className="tk-btn-sm">
                   Catat
                 </button>
               </form>
@@ -178,27 +173,24 @@ export default async function DepositsPage({
                   name="damageAmount"
                   type="number"
                   placeholder="Rusak"
-                  className="w-24 rounded border px-2 py-1 text-xs"
+                  className="tk-input w-24 !py-1 !text-xs"
                 />
                 <input
                   name="damageReason"
                   placeholder="Alasan potongan"
-                  className="min-w-[8rem] flex-1 rounded border px-2 py-1 text-xs"
+                  className="tk-input min-w-[8rem] flex-1 !py-1 !text-xs"
                 />
                 <label className="flex items-center gap-1 text-[10px]">
                   <input type="checkbox" name="requireApproval" /> Approval
                 </label>
-                <button
-                  type="submit"
-                  className="rounded border border-zinc-900 px-2 py-1 text-xs"
-                >
+                <button type="submit" className="tk-btn-secondary !px-2 !py-1 !text-xs">
                   Settle checkout
                 </button>
               </form>
             </li>
-          ))
-        )}
+          ))}
       </ul>
+      )}
     </>
   );
 }

@@ -3,6 +3,7 @@
 import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { EmptyState, PageHeader, StatusBadge } from '@/components/ui';
 
 type Row = {
   id?: string;
@@ -54,39 +55,43 @@ function SearchInner() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-2xl font-semibold tracking-tight">Smart search</h1>
-      <p className="mt-1 text-sm text-zinc-600">
-        Bahasa natural → filter aman. Klik hasil untuk buka entitas.
-      </p>
+      <PageHeader
+        title="Smart search"
+        description="Bahasa natural ke filter aman. Klik hasil untuk buka entitas."
+      />
       <div className="mt-4 flex gap-2">
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && void run()}
           placeholder='Contoh: "penyewa belum bayar" / "kamar available"'
-          className="flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm shadow-sm outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200"
+          className="tk-input flex-1"
         />
         <button
           type="button"
           disabled={busy || !workspaceId}
           onClick={() => void run()}
-          className="rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
+          className="tk-btn disabled:opacity-50"
         >
           {busy ? '…' : 'Cari'}
         </button>
       </div>
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+      {error && (
+        <div className="tk-alert mt-3" data-variant="error">
+          {error}
+        </div>
+      )}
       {result && (
         <div className="mt-6 space-y-3">
           <p className="text-xs text-zinc-500">
-            Entity: <b>{String(result.entity ?? '—')}</b> · {result.count ?? 0}{' '}
+            Entity: <b>{String(result.entity ?? '-')}</b> · {result.count ?? 0}{' '}
             hasil
           </p>
-          <ul className="divide-y divide-zinc-100 overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-sm">
-            {(result.results ?? []).length === 0 ? (
-              <li className="p-4 text-sm text-zinc-500">Tidak ada hasil.</li>
-            ) : (
-              (result.results ?? []).map((row, i) => {
+          {(result.results ?? []).length === 0 ? (
+            <EmptyState title="Tidak ada hasil" body="Coba ubah kata kunci." />
+          ) : (
+          <ul className="tk-list">
+              {(result.results ?? []).map((row, i) => {
                 const href =
                   row._href ??
                   `/dashboard?workspaceId=${encodeURIComponent(workspaceId)}`;
@@ -107,17 +112,18 @@ function SearchInner() {
                       className="flex items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-zinc-50"
                     >
                       <span className="font-medium">{label}</span>
-                      {row.status != null && (
-                        <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] uppercase text-zinc-600">
-                          {String(row.status)}
-                        </span>
-                      )}
+                      {row.status != null ? (
+                        <StatusBadge
+                          status={String(row.status)}
+                          kind="invoice"
+                        />
+                      ) : null}
                     </Link>
                   </li>
                 );
-              })
-            )}
+              })}
           </ul>
+          )}
         </div>
       )}
     </div>

@@ -27,7 +27,7 @@ export function ExpenseAiHint({ workspaceId }: { workspaceId: string }) {
       if (cats?.length) {
         setHint(
           cats.map((c) => `${c.label} (${c.key})`).join(' · ') +
-            ' — salin ke field kategori',
+            ' - salin ke field kategori',
         );
         const input = document.querySelector<HTMLInputElement>(
           'input[name="category"]',

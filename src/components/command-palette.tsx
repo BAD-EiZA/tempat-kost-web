@@ -2,46 +2,53 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { groupLabelForHref } from '@/lib/nav-taxonomy';
 
 type Item = { href: string; label: string; group?: string };
 
-const DEFAULT_ITEMS: Item[] = [
-  { href: '/dashboard', label: 'Overview', group: 'Dashboard' },
-  { href: '/dashboard/properties', label: 'Properti', group: 'Dashboard' },
-  { href: '/dashboard/rooms', label: 'Kamar', group: 'Dashboard' },
-  { href: '/dashboard/tenants', label: 'Penyewa', group: 'Dashboard' },
-  { href: '/dashboard/leases', label: 'Kontrak', group: 'Dashboard' },
-  { href: '/dashboard/billing', label: 'Tagihan', group: 'Finance' },
-  { href: '/dashboard/payments', label: 'Pembayaran', group: 'Finance' },
-  { href: '/dashboard/expenses', label: 'Pengeluaran', group: 'Finance' },
-  { href: '/dashboard/deposits', label: 'Deposit', group: 'Finance' },
-  { href: '/dashboard/reports', label: 'Laporan', group: 'Finance' },
-  { href: '/dashboard/crm', label: 'CRM Prospects', group: 'Growth' },
-  { href: '/dashboard/crm/bookings', label: 'CRM Bookings', group: 'Growth' },
-  { href: '/dashboard/surveys', label: 'Survey', group: 'Growth' },
-  { href: '/dashboard/publish', label: 'Publish public', group: 'Growth' },
-  { href: '/dashboard/maintenance', label: 'Maintenance', group: 'Ops' },
-  { href: '/dashboard/meters', label: 'Meter', group: 'Ops' },
-  { href: '/dashboard/inventory', label: 'Inventaris', group: 'Ops' },
-  { href: '/dashboard/inspections', label: 'Inspeksi', group: 'Ops' },
-  { href: '/dashboard/ops', label: 'Ops lapangan', group: 'Ops' },
-  { href: '/dashboard/import', label: 'Import data', group: 'Ops' },
-  { href: '/dashboard/structure', label: 'Struktur', group: 'Setup' },
-  { href: '/dashboard/team', label: 'Tim', group: 'Setup' },
-  { href: '/dashboard/roles', label: 'Roles', group: 'Setup' },
-  { href: '/dashboard/settings', label: 'Settings', group: 'Setup' },
-  { href: '/dashboard/ai', label: 'AI Assistant', group: 'AI' },
-  { href: '/dashboard/search', label: 'Smart search', group: 'AI' },
-  { href: '/dashboard/insights', label: 'Insights', group: 'AI' },
-  { href: '/dashboard/ops/offline', label: 'Offline drafts', group: 'Ops' },
-  { href: '/dashboard/notifications', label: 'Notifikasi', group: 'AI' },
-  { href: '/dashboard/flags', label: 'Feature flags', group: 'Setup' },
-  { href: '/dashboard/approvals', label: 'Approvals', group: 'Setup' },
-  { href: '/portal', label: 'Portal penyewa', group: 'Portal' },
-  { href: '/onboarding', label: 'Onboarding workspace', group: 'Setup' },
-  { href: '/onboarding/wizard', label: 'Onboarding AI wizard', group: 'Setup' },
-  { href: '/admin', label: 'Super admin', group: 'Admin' },
+const DEFAULT_HREFS: Array<{ href: string; label: string }> = [
+  { href: '/dashboard', label: 'Overview' },
+  { href: '/dashboard/properties', label: 'Properti' },
+  { href: '/dashboard/rooms', label: 'Kamar' },
+  { href: '/dashboard/tenants', label: 'Penyewa' },
+  { href: '/dashboard/leases', label: 'Kontrak' },
+  { href: '/dashboard/billing', label: 'Tagihan' },
+  { href: '/dashboard/payments', label: 'Pembayaran' },
+  { href: '/dashboard/expenses', label: 'Pengeluaran' },
+  { href: '/dashboard/deposits', label: 'Deposit' },
+  { href: '/dashboard/reports', label: 'Laporan' },
+  { href: '/dashboard/crm', label: 'CRM Prospects' },
+  { href: '/dashboard/crm/bookings', label: 'CRM Bookings' },
+  { href: '/dashboard/surveys', label: 'Survey' },
+  { href: '/dashboard/publish', label: 'Publish public' },
+  { href: '/dashboard/maintenance', label: 'Maintenance' },
+  { href: '/dashboard/meters', label: 'Meter' },
+  { href: '/dashboard/inventory', label: 'Inventaris' },
+  { href: '/dashboard/inspections', label: 'Inspeksi' },
+  { href: '/dashboard/ops', label: 'Ops lapangan' },
+  { href: '/dashboard/import', label: 'Import data' },
+  { href: '/dashboard/structure', label: 'Struktur' },
+  { href: '/dashboard/team', label: 'Tim' },
+  { href: '/dashboard/roles', label: 'Roles' },
+  { href: '/dashboard/settings', label: 'Settings' },
+  { href: '/dashboard/ai', label: 'AI Assistant' },
+  { href: '/dashboard/search', label: 'Smart search' },
+  { href: '/dashboard/insights', label: 'Insights' },
+  { href: '/dashboard/ops/offline', label: 'Offline drafts' },
+  { href: '/dashboard/notifications', label: 'Notifikasi' },
+  { href: '/dashboard/flags', label: 'Feature flags' },
+  { href: '/dashboard/approvals', label: 'Approvals' },
+  { href: '/dashboard/audit-log', label: 'Audit log' },
+  { href: '/portal', label: 'Portal penyewa' },
+  { href: '/onboarding', label: 'Onboarding workspace' },
+  { href: '/onboarding/wizard', label: 'Onboarding AI wizard' },
+  { href: '/admin', label: 'Super admin' },
 ];
+
+const DEFAULT_ITEMS: Item[] = DEFAULT_HREFS.map((item) => ({
+  ...item,
+  group: groupLabelForHref(item.href),
+}));
 
 export function CommandPalette({ items }: { items?: Item[] }) {
   const router = useRouter();
@@ -205,12 +212,14 @@ export function CommandPalette({ items }: { items?: Item[] }) {
                     setOpen(false);
                   }}
                   className={`flex w-full items-center justify-between px-4 py-2 text-left text-sm ${
-                    i === idx ? 'bg-zinc-900 text-white' : 'hover:bg-zinc-50'
+                    i === idx
+                      ? 'bg-emerald-800 text-white'
+                      : 'hover:bg-zinc-50'
                   }`}
                 >
                   <span>{item.label}</span>
                   <span
-                    className={`text-[10px] ${i === idx ? 'text-zinc-300' : 'text-zinc-400'}`}
+                    className={`text-[10px] ${i === idx ? 'text-emerald-100' : 'text-zinc-400'}`}
                   >
                     {item.group}
                   </span>

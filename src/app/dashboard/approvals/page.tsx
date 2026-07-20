@@ -1,7 +1,12 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/auth';
 import { apiFetch, listWorkspaces } from '@/lib/api';
+import {
+  EmptyState,
+  PageHeader,
+  StatusBadge,
+  WorkspaceChips,
+} from '@/components/ui';
 
 async function decide(formData: FormData) {
   'use server';
@@ -72,43 +77,48 @@ export default async function ApprovalsPage({
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">Approval</h1>
+      <PageHeader
+        title="Approval"
+        description="Permintaan persetujuan yang menunggu keputusan."
+      />
       {workspaces.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {workspaces.map((ws) => (
-            <Link
-              key={ws.id}
-              href={`/dashboard/approvals?workspaceId=${ws.id}`}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
-                ws.id === workspaceId ? 'bg-zinc-900 text-white' : 'bg-zinc-100'
-              }`}
-            >
-              {ws.name}
-            </Link>
-          ))}
-        </div>
+        <WorkspaceChips
+          workspaces={workspaces}
+          workspaceId={workspaceId}
+          hrefFor={(id) => `/dashboard/approvals?workspaceId=${id}`}
+        />
       )}
       {error && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
+        <div className="tk-alert mt-4" data-variant="warning">
           {error}
         </div>
       )}
-      <ul className="mt-6 divide-y rounded-xl border bg-white">
-        {items.length === 0 ? (
-          <li className="p-6 text-sm text-zinc-500">Tidak ada permintaan.</li>
-        ) : (
-          items.map((a) => (
+      {items.length === 0 ? (
+        <EmptyState
+          className="mt-6"
+          title="Tidak ada permintaan"
+          body="Permintaan approval akan muncul di sini."
+        />
+      ) : (
+      <ul className="mt-6 space-y-2">
+          {items.map((a) => (
             <li
               key={a.id}
-              className="flex flex-wrap items-center justify-between gap-2 px-6 py-3 text-sm"
+              className="tk-card flex flex-wrap items-center justify-between gap-2 px-5 py-3 text-sm"
             >
               <div>
-                <p className="font-medium">
-                  {a.kind} · {a.entityType}/{a.entityId}
+                <p className="font-semibold text-zinc-900">
+                  {a.kind} · {a.entityType}
                 </p>
-                <p className="text-xs text-zinc-500">
-                  {a.status} {a.note ? `· ${a.note}` : ''}
+                <p className="mt-0.5 font-mono text-xs text-zinc-400">
+                  {a.entityId}
                 </p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <StatusBadge status={a.status} kind="payment" />
+                  {a.note ? (
+                    <span className="text-xs text-zinc-500">{a.note}</span>
+                  ) : null}
+                </div>
               </div>
               {a.status === 'pending' && (
                 <div className="flex gap-1">
@@ -116,10 +126,7 @@ export default async function ApprovalsPage({
                     <input type="hidden" name="id" value={a.id} />
                     <input type="hidden" name="workspaceId" value={workspaceId} />
                     <input type="hidden" name="status" value="approved" />
-                    <button
-                      type="submit"
-                      className="rounded bg-emerald-700 px-2 py-1 text-xs text-white"
-                    >
+                    <button type="submit" className="tk-btn-sm">
                       Approve
                     </button>
                   </form>
@@ -129,7 +136,7 @@ export default async function ApprovalsPage({
                     <input type="hidden" name="status" value="rejected" />
                     <button
                       type="submit"
-                      className="rounded border px-2 py-1 text-xs"
+                      className="tk-btn-secondary !px-2 !py-1 !text-xs"
                     >
                       Reject
                     </button>
@@ -137,17 +144,19 @@ export default async function ApprovalsPage({
                 </div>
               )}
             </li>
-          ))
-        )}
+          ))}
       </ul>
+      )}
       {workspaceId && (
         <form
           action={requestApproval}
-          className="mt-8 max-w-md space-y-2 rounded-xl border bg-white p-6"
+          className="tk-card mt-8 max-w-md space-y-2 p-6"
         >
-          <h2 className="font-medium">Ajukan approval</h2>
+          <h2 className="text-base font-semibold text-zinc-900">
+            Ajukan approval
+          </h2>
           <input type="hidden" name="workspaceId" value={workspaceId} />
-          <select name="kind" className="w-full rounded border px-3 py-2 text-sm">
+          <select name="kind" className="w-full tk-input text-sm">
             <option value="expense">Expense</option>
             <option value="refund">Refund</option>
             <option value="bank_change">Bank change</option>
@@ -156,16 +165,16 @@ export default async function ApprovalsPage({
             name="entityId"
             required
             placeholder="Entity ID"
-            className="w-full rounded border px-3 py-2 text-sm"
+            className="w-full tk-input text-sm"
           />
           <input
             name="note"
             placeholder="Catatan"
-            className="w-full rounded border px-3 py-2 text-sm"
+            className="w-full tk-input text-sm"
           />
           <button
             type="submit"
-            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white"
+            className="tk-btn"
           >
             Submit
           </button>

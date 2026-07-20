@@ -1,6 +1,11 @@
+import Link from 'next/link';
 import { requireAuth } from '@/lib/auth';
 import { apiFetch } from '@/lib/api';
-import { resolvePortalTenantId } from '@/lib/portal-tenant';
+import { resolvePortalTenantId, withTenant } from '@/lib/portal-tenant';
+import { formatDateId, formatIdr } from '@/lib/format';
+import { EmptyState } from '@/components/ui';
+import { PortalPageHeader } from '@/components/portal/page-header';
+import { StatusBadge } from '@/components/portal/status-badge';
 
 type Attempt = {
   id: string;
@@ -11,14 +16,6 @@ type Attempt = {
   invoiceId: string | null;
 };
 
-function formatIdr(n: number) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(n);
-}
-
 export default async function PortalPaymentsPage({
   searchParams,
 }: {
@@ -27,10 +24,12 @@ export default async function PortalPaymentsPage({
   await requireAuth();
   const sp = await searchParams;
   let attempts: Attempt[] = [];
+  let tenantId = '';
   let error: string | null = null;
 
   try {
-    const { tenantId } = await resolvePortalTenantId(sp.tenantId);
+    const resolved = await resolvePortalTenantId(sp.tenantId);
+    tenantId = resolved.tenantId;
     if (tenantId) {
       attempts = await apiFetch<Attempt[]>(
         `/v1/portal/payment-attempts?tenantId=${encodeURIComponent(tenantId)}`,
@@ -41,34 +40,50 @@ export default async function PortalPaymentsPage({
   }
 
   return (
-    <>
-      <h1 className="text-xl font-semibold">Status pembayaran online</h1>
-      <p className="mt-1 text-xs text-zinc-500">Midtrans payment attempts</p>
-      {error && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
+    <div className="space-y-4">
+      <PortalPageHeader
+        title="Riwayat pembayaran"
+        description="Transaksi online (Snap)."
+      />
+      {error ? (
+        <div className="tk-alert" data-variant="warning">
           {error}
         </div>
-      )}
-      <ul className="mt-4 divide-y rounded-xl border bg-white">
-        {attempts.length === 0 ? (
-          <li className="p-4 text-sm text-zinc-500">Belum ada attempt.</li>
-        ) : (
-          attempts.map((a) => (
-            <li key={a.id} className="px-4 py-3 text-sm">
-              <p className="font-medium">
-                {a.orderId}{' '}
-                <span className="text-xs font-normal text-zinc-500">
-                  {a.status}
-                </span>
-              </p>
-              <p className="text-xs text-zinc-500">
-                {formatIdr(Number(a.amount))} ·{' '}
-                {String(a.createdAt).slice(0, 19).replace('T', ' ')}
+      ) : null}
+
+      {attempts.length === 0 ? (
+        <EmptyState
+          title="Belum ada transaksi"
+          body="Pembayaran online yang Anda mulai akan tercatat di sini."
+          action={
+            tenantId ? (
+              <Link
+                href={withTenant('/portal/bills', tenantId)}
+                className="tk-btn !text-sm"
+              >
+                Lihat tagihan
+              </Link>
+            ) : null
+          }
+        />
+      ) : (
+        <ul className="space-y-2">
+          {attempts.map((a) => (
+            <li key={a.id} className="tk-card p-4">
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-base font-semibold tabular-nums text-zinc-900">
+                  {formatIdr(Number(a.amount))}
+                </p>
+                <StatusBadge status={a.status} kind="payment" />
+              </div>
+              <p className="mt-1 truncate text-xs text-zinc-500">{a.orderId}</p>
+              <p className="mt-0.5 text-xs text-zinc-400">
+                {formatDateId(a.createdAt)}
               </p>
             </li>
-          ))
-        )}
-      </ul>
-    </>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }

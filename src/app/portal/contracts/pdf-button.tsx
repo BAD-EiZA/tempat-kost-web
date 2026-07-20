@@ -10,9 +10,11 @@ export function ContractPdfButton({
   tenantId: string;
 }) {
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   async function download() {
     setError(null);
+    setBusy(true);
     try {
       const res = await fetch('/api/proxy', {
         method: 'POST',
@@ -42,15 +44,22 @@ export function ContractPdfButton({
       URL.revokeObjectURL(url);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error');
+    } finally {
+      setBusy(false);
     }
   }
 
   return (
-    <span>
-      <button type="button" onClick={() => void download()} className="underline">
-        PDF
+    <span className="inline-flex items-center gap-1">
+      <button
+        type="button"
+        onClick={() => void download()}
+        disabled={busy}
+        className="tk-btn-secondary !px-2 !py-1 !text-xs"
+      >
+        {busy ? '…' : 'PDF'}
       </button>
-      {error && <span className="ml-1 text-red-600">{error}</span>}
+      {error ? <span className="text-red-600">{error}</span> : null}
     </span>
   );
 }

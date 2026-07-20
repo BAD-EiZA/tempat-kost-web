@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/auth';
 import { apiFetch } from '@/lib/api';
@@ -23,20 +24,31 @@ export default async function InvitePage({
   const { token } = await params;
 
   return (
-    <div className="mx-auto flex min-h-full max-w-md flex-col justify-center px-6 py-16">
-      <h1 className="text-2xl font-semibold">Undangan workspace</h1>
-      <p className="mt-2 text-sm text-zinc-600">
-        Terima undangan untuk bergabung sebagai anggota staf.
-      </p>
-      <form action={acceptAction} className="mt-8">
-        <input type="hidden" name="token" value={token} />
-        <button
-          type="submit"
-          className="w-full rounded-lg bg-zinc-900 py-2.5 text-sm font-medium text-white"
-        >
-          Terima undangan
-        </button>
-      </form>
+    <div className="flex min-h-[100dvh] items-center justify-center bg-zinc-50 px-6 py-16">
+      <div className="tk-card w-full max-w-md p-8">
+        <p className="text-xs font-medium tracking-wide text-emerald-800 uppercase">
+          Tempat Kost
+        </p>
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">
+          Undangan workspace
+        </h1>
+        <p className="mt-2 text-sm leading-relaxed text-zinc-600">
+          Terima undangan untuk bergabung sebagai anggota staf. Anda akan diarahkan
+          ke dashboard setelah menerima.
+        </p>
+        <form action={acceptAction} className="mt-8 space-y-3">
+          <input type="hidden" name="token" value={token} />
+          <button type="submit" className="tk-btn w-full !py-2.5">
+            Terima undangan
+          </button>
+          <Link
+            href="/dashboard"
+            className="tk-btn-secondary flex w-full !py-2.5"
+          >
+            Nanti saja
+          </Link>
+        </form>
+      </div>
     </div>
   );
 }

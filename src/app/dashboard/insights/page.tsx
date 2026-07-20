@@ -3,14 +3,8 @@
 import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-
-function formatIdr(n: number) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(n);
-}
+import { PageHeader } from '@/components/ui';
+import { formatIdr } from '@/lib/format';
 
 function BarChart({
   series,
@@ -111,10 +105,10 @@ function InsightsInner() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-2xl font-semibold tracking-tight">Insights</h1>
-      <p className="mt-1 text-sm text-zinc-600">
-        Ringkasan · forecast · riwayat · rekomendasi sewa (human review)
-      </p>
+      <PageHeader
+        title="Insights"
+        description="Ringkasan, forecast, riwayat kas, dan rekomendasi sewa (human review)."
+      />
       <div className="mt-4 flex flex-wrap gap-2">
         {(
           [
@@ -128,11 +122,7 @@ function InsightsInner() {
             key={k}
             type="button"
             onClick={() => setTab(k)}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-              tab === k
-                ? 'bg-zinc-900 text-white'
-                : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
-            }`}
+            className={tab === k ? 'tk-chip tk-chip-active' : 'tk-chip'}
           >
             {label}
           </button>
@@ -144,7 +134,7 @@ function InsightsInner() {
         <input
           value={propertyId}
           onChange={(e) => setPropertyId(e.target.value)}
-          className="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm"
+          className="tk-input mt-1 w-full"
         />
         </label>
         {tab === 'rent' && (
@@ -153,7 +143,7 @@ function InsightsInner() {
           <input
             value={roomId}
             onChange={(e) => setRoomId(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm"
+            className="tk-input mt-1 w-full"
           />
           </label>
         )}
@@ -162,14 +152,14 @@ function InsightsInner() {
         type="button"
         disabled={busy || !workspaceId}
         onClick={() => void run()}
-        className="mt-4 rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
+        className="mt-4 tk-btn disabled:opacity-50"
       >
         {busy ? 'Memproses…' : 'Buat analisis'}
       </button>
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
       {out != null && (
-        <div className="mt-6 space-y-4 rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm">
+        <div className="tk-card mt-6 space-y-4 p-5">
           {typeof out.summary === 'string' && (
             <p className="whitespace-pre-wrap text-sm leading-relaxed">
               {out.summary}
@@ -234,7 +224,7 @@ function InsightsInner() {
                 {out.low != null && (
                   <>
                     {' '}
-                    · {formatIdr(Number(out.low))} –{' '}
+                    · {formatIdr(Number(out.low))} -{' '}
                     {formatIdr(Number(out.high ?? 0))}
                   </>
                 )}

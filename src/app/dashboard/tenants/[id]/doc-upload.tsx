@@ -18,7 +18,7 @@ export function DocUpload({ workspaceId }: { workspaceId: string }) {
           name="fileUrl"
           required
           placeholder="atau paste URL file"
-          className="mt-2 w-full rounded border px-3 py-2 text-sm"
+          className="mt-2 w-full tk-input text-sm"
           onChange={(e) => setUrl(e.target.value)}
         />
       )}

@@ -1,6 +1,10 @@
 import { requireAuth } from '@/lib/auth';
 import { resolvePortalTenantId } from '@/lib/portal-tenant';
 import { apiFetch } from '@/lib/api';
+import { formatDateId, formatIdr } from '@/lib/format';
+import { EmptyState } from '@/components/ui';
+import { PortalPageHeader } from '@/components/portal/page-header';
+import { StatusBadge } from '@/components/portal/status-badge';
 import { ContractPdfButton } from './pdf-button';
 
 type Lease = {
@@ -23,14 +27,6 @@ type Lease = {
     signedAt: string | null;
   }>;
 };
-
-function formatIdr(n: number) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(n);
-}
 
 export default async function PortalContractsPage({
   searchParams,
@@ -56,50 +52,60 @@ export default async function PortalContractsPage({
   }
 
   return (
-    <>
-      <h1 className="text-xl font-semibold">Kontrak</h1>
-      {error && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
+    <div className="space-y-4">
+      <PortalPageHeader
+        title="Kontrak"
+        description="Sewa aktif dan dokumen perjanjian."
+      />
+      {error ? (
+        <div className="tk-alert" data-variant="warning">
           {error}
         </div>
-      )}
-      <ul className="mt-4 divide-y rounded-xl border bg-white">
-        {leases.length === 0 ? (
-          <li className="p-4 text-sm text-zinc-500">Belum ada kontrak.</li>
-        ) : (
-          leases.map((l) => (
-            <li key={l.id} className="px-4 py-3 text-sm">
-              <p className="font-medium">
-                {l.leaseNumber}{' '}
-                <span className="text-xs font-normal text-zinc-500">
-                  {l.status}
-                </span>
-              </p>
-              <p className="text-xs text-zinc-500">
-                {l.property?.name} / {l.room?.name} ·{' '}
+      ) : null}
+
+      {leases.length === 0 ? (
+        <EmptyState title="Belum ada kontrak" body="Kontrak sewa akan tampil di sini." />
+      ) : (
+        <ul className="space-y-3">
+          {leases.map((l) => (
+            <li key={l.id} className="tk-card p-4">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <p className="text-sm font-semibold text-zinc-900">
+                    {l.leaseNumber}
+                  </p>
+                  <p className="mt-0.5 text-xs text-zinc-500">
+                    {l.property?.name}
+                    {l.room?.name ? ` / ${l.room.name}` : ''}
+                  </p>
+                </div>
+                <StatusBadge status={l.status} kind="lease" />
+              </div>
+              <p className="mt-3 text-base font-semibold tabular-nums text-zinc-900">
                 {formatIdr(Number(l.rentAmount))}
+                <span className="text-xs font-normal text-zinc-500"> /bulan</span>
               </p>
-              <p className="text-xs text-zinc-400">
-                {String(l.startDate).slice(0, 10)}
-                {l.endDate ? ` → ${String(l.endDate).slice(0, 10)}` : ''}
+              <p className="mt-1 text-xs text-zinc-500">
+                {formatDateId(l.startDate)}
+                {l.endDate ? ` - ${formatDateId(l.endDate)}` : ''}
               </p>
-              {l.contracts && l.contracts.length > 0 && (
-                <ul className="mt-2 space-y-2">
+
+              {l.contracts && l.contracts.length > 0 ? (
+                <ul className="mt-3 space-y-2 border-t border-zinc-100 pt-3">
                   {l.contracts.map((c) => (
                     <li
                       key={c.id}
                       className="flex flex-wrap items-center gap-2 text-xs"
                     >
-                      <span>
-                        v{c.version} · {c.status}
-                        {c.signedAt
-                          ? ` · ${String(c.signedAt).slice(0, 10)}`
-                          : ''}
+                      <span className="text-zinc-600">
+                        Dokumen v{c.version}
+                        {c.signedAt ? ` · ${formatDateId(c.signedAt)}` : ''}
                       </span>
+                      <StatusBadge status={c.status} kind="contract" />
                       {c.status !== 'signed' && c.signToken ? (
                         <a
                           href={`/sign/${c.signToken}`}
-                          className="underline"
+                          className="tk-btn-sm"
                           target="_blank"
                           rel="noreferrer"
                         >
@@ -115,11 +121,11 @@ export default async function PortalContractsPage({
                     </li>
                   ))}
                 </ul>
-              )}
+              ) : null}
             </li>
-          ))
-        )}
-      </ul>
-    </>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }

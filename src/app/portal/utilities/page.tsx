@@ -1,6 +1,10 @@
 import { requireAuth } from '@/lib/auth';
 import { apiFetch } from '@/lib/api';
 import { resolvePortalTenantId } from '@/lib/portal-tenant';
+import { formatDateId, formatIdr } from '@/lib/format';
+import { EmptyState } from '@/components/ui';
+import { PortalPageHeader } from '@/components/portal/page-header';
+import { StatusBadge } from '@/components/portal/status-badge';
 
 type UtilitiesData = {
   lease: { room: string; property: string } | null;
@@ -28,14 +32,6 @@ type UtilitiesData = {
   }>;
 };
 
-function formatIdr(n: number) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(n);
-}
-
 export default async function PortalUtilitiesPage({
   searchParams,
 }: {
@@ -58,64 +54,114 @@ export default async function PortalUtilitiesPage({
   }
 
   return (
-    <>
-      <h1 className="text-xl font-semibold">Utilitas / listrik</h1>
-      {error && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
+    <div className="space-y-4">
+      <PortalPageHeader
+        title="Listrik & utilitas"
+        description="Kebijakan, tagihan utilitas, dan bacaan meter."
+      />
+      {error ? (
+        <div className="tk-alert" data-variant="warning">
           {error}
         </div>
-      )}
+      ) : null}
+
       {!data?.lease ? (
-        <p className="mt-4 text-sm text-zinc-500">Tidak ada sewa aktif.</p>
+        <EmptyState
+          title="Tidak ada sewa aktif"
+          body="Data utilitas tersedia setelah kontrak aktif."
+        />
       ) : (
-        <div className="mt-4 space-y-4">
-          <div className="rounded-xl border bg-white p-4 text-sm">
-            <p className="font-medium">
+        <div className="space-y-4">
+          <div className="tk-card p-4">
+            <p className="text-sm font-semibold text-zinc-900">
               {data.lease.property} / {data.lease.room}
             </p>
-            {data.policies.map((p, i) => (
-              <p key={i} className="mt-1 text-xs text-zinc-500">
-                {p.payerType} · {p.billingMethod}
-                {p.fixedMonthlyFee != null
-                  ? ` · fixed ${formatIdr(Number(p.fixedMonthlyFee))}`
-                  : ''}
-                {p.ratePerUnit != null ? ` · Rp${p.ratePerUnit}/kWh` : ''}
+            {data.policies.length === 0 ? (
+              <p className="mt-1 text-xs text-zinc-500">
+                Belum ada kebijakan utilitas.
               </p>
-            ))}
+            ) : (
+              data.policies.map((p, i) => (
+                <p key={i} className="mt-1 text-xs text-zinc-500">
+                  {p.payerType} · {p.billingMethod}
+                  {p.fixedMonthlyFee != null
+                    ? ` · fixed ${formatIdr(Number(p.fixedMonthlyFee))}`
+                    : ''}
+                  {p.ratePerUnit != null
+                    ? ` · ${formatIdr(Number(p.ratePerUnit))}/kWh`
+                    : ''}
+                </p>
+              ))
+            )}
           </div>
+
           <section>
-            <h2 className="text-sm font-medium">Tagihan utilitas</h2>
-            <ul className="mt-2 divide-y rounded-xl border bg-white">
-              {data.invoices.length === 0 ? (
-                <li className="p-3 text-xs text-zinc-500">Belum ada.</li>
-              ) : (
-                data.invoices.map((inv) => (
-                  <li key={inv.id} className="px-3 py-2 text-xs">
-                    {inv.invoiceNumber} · {inv.status} ·{' '}
-                    {formatIdr(Number(inv.total))} · due{' '}
-                    {String(inv.dueDate).slice(0, 10)}
-                  </li>
-                ))
-              )}
-            </ul>
-          </section>
-          <section>
-            <h2 className="text-sm font-medium">Pembacaan meter</h2>
-            <ul className="mt-2 space-y-2">
-              {data.meters.map((m) => (
-                <li key={m.id} className="rounded-xl border bg-white p-3 text-xs">
-                  <p className="font-medium">{m.label}</p>
-                  {m.readings.map((r, i) => (
-                    <p key={i} className="text-zinc-500">
-                      {r.periodLabel}: {r.consumption} · {r.status}
+            <h2 className="mb-2 text-sm font-semibold text-zinc-900">
+              Tagihan utilitas
+            </h2>
+            {data.invoices.length === 0 ? (
+              <EmptyState title="Belum ada tagihan utilitas" className="!py-6" />
+            ) : (
+              <ul className="space-y-2">
+                {data.invoices.map((inv) => (
+                  <li key={inv.id} className="tk-card p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm font-medium text-zinc-900">
+                        {inv.invoiceNumber}
+                      </p>
+                      <StatusBadge status={inv.status} kind="invoice" />
+                    </div>
+                    <p className="mt-1 text-sm font-semibold tabular-nums">
+                      {formatIdr(Number(inv.total))}
                     </p>
-                  ))}
-                </li>
-              ))}
-            </ul>
+                    <p className="text-xs text-zinc-500">
+                      Jatuh tempo {formatDateId(inv.dueDate)}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section>
+            <h2 className="mb-2 text-sm font-semibold text-zinc-900">
+              Pembacaan meter
+            </h2>
+            {data.meters.length === 0 ? (
+              <EmptyState title="Belum ada data meter" className="!py-6" />
+            ) : (
+              <ul className="space-y-2">
+                {data.meters.map((m) => (
+                  <li key={m.id} className="tk-card p-3">
+                    <p className="text-sm font-medium text-zinc-900">
+                      {m.label}
+                    </p>
+                    {m.readings.length === 0 ? (
+                      <p className="mt-1 text-xs text-zinc-500">
+                        Belum ada bacaan.
+                      </p>
+                    ) : (
+                      <ul className="mt-2 space-y-1">
+                        {m.readings.map((r, i) => (
+                          <li
+                            key={i}
+                            className="flex justify-between gap-2 text-xs text-zinc-600"
+                          >
+                            <span>{r.periodLabel}</span>
+                            <span className="tabular-nums">
+                              {r.consumption} · {r.status}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
         </div>
       )}
-    </>
+    </div>
   );
 }

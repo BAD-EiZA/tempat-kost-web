@@ -1,7 +1,11 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/auth';
 import { apiFetch, listWorkspaces } from '@/lib/api';
+import {
+  PageHeader,
+  StatusBadge,
+  WorkspaceChips,
+} from '@/components/ui';
 
 async function createTemplate(formData: FormData) {
   'use server';
@@ -83,38 +87,40 @@ export default async function InspectionsPage({
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">Inspeksi</h1>
+      <PageHeader
+        title="Inspeksi"
+        description="Template checklist dan catatan inspeksi kamar."
+      />
       {workspaces.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {workspaces.map((ws) => (
-            <Link
-              key={ws.id}
-              href={`/dashboard/inspections?workspaceId=${ws.id}`}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
-                ws.id === workspaceId ? 'bg-zinc-900 text-white' : 'bg-zinc-100'
-              }`}
-            >
-              {ws.name}
-            </Link>
-          ))}
-        </div>
+        <WorkspaceChips
+          workspaces={workspaces}
+          workspaceId={workspaceId}
+          hrefFor={(id) => `/dashboard/inspections?workspaceId=${id}`}
+        />
       )}
       {error && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
+        <div className="tk-alert mt-4" data-variant="warning">
           {error}
         </div>
       )}
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <section className="rounded-xl border bg-white p-5">
-          <h2 className="font-medium">Template</h2>
-          <ul className="mt-2 text-sm">
-            {templates.map((t) => (
-              <li key={t.id}>
-                {t.name}{' '}
-                <span className="text-xs text-zinc-500">{t.kind}</span>
-              </li>
-            ))}
-          </ul>
+        <section className="tk-card p-5">
+          <h2 className="text-base font-semibold text-zinc-900">Template</h2>
+          {templates.length === 0 ? (
+            <p className="mt-2 text-sm text-zinc-500">Belum ada template.</p>
+          ) : (
+            <ul className="mt-2 space-y-1 text-sm">
+              {templates.map((t) => (
+                <li
+                  key={t.id}
+                  className="flex items-center justify-between gap-2 border-b border-zinc-100 py-2 last:border-0"
+                >
+                  <span className="font-medium text-zinc-900">{t.name}</span>
+                  <span className="text-xs text-zinc-500">{t.kind}</span>
+                </li>
+              ))}
+            </ul>
+          )}
           {workspaceId && (
             <form action={createTemplate} className="mt-3 flex gap-2">
               <input type="hidden" name="workspaceId" value={workspaceId} />
@@ -122,33 +128,43 @@ export default async function InspectionsPage({
                 name="name"
                 required
                 placeholder="Nama template"
-                className="flex-1 rounded border px-2 py-1 text-sm"
+                className="tk-input flex-1 !px-2 !py-1 !text-sm"
               />
-              <select name="kind" className="rounded border px-2 py-1 text-sm">
+              <select name="kind" className="tk-input !px-2 !py-1 !text-sm">
                 <option value="pre_checkin">Pre check-in</option>
                 <option value="routine">Routine</option>
                 <option value="checkout">Check-out</option>
               </select>
-              <button type="submit" className="rounded bg-zinc-900 px-3 py-1 text-sm text-white">
+              <button type="submit" className="tk-btn-sm">
                 +
               </button>
             </form>
           )}
         </section>
-        <section className="rounded-xl border bg-white p-5">
-          <h2 className="font-medium">Inspeksi</h2>
-          <ul className="mt-2 text-sm">
-            {inspections.map((i) => (
-              <li key={i.id}>
-                {i.template?.name ?? i.kind} · {i.status}
-              </li>
-            ))}
-          </ul>
+        <section className="tk-card p-5">
+          <h2 className="text-base font-semibold text-zinc-900">Inspeksi</h2>
+          {inspections.length === 0 ? (
+            <p className="mt-2 text-sm text-zinc-500">Belum ada inspeksi.</p>
+          ) : (
+            <ul className="mt-2 space-y-2 text-sm">
+              {inspections.map((i) => (
+                <li
+                  key={i.id}
+                  className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-100 py-2 last:border-0"
+                >
+                  <span className="font-medium text-zinc-900">
+                    {i.template?.name ?? i.kind}
+                  </span>
+                  <StatusBadge status={i.status} kind="survey" />
+                </li>
+              ))}
+            </ul>
+          )}
           {workspaceId && (
             <form action={createInspection} className="mt-3 space-y-2">
               <input type="hidden" name="workspaceId" value={workspaceId} />
-              <select name="templateId" className="w-full rounded border px-2 py-1 text-sm">
-                <option value="">— Tanpa template —</option>
+              <select name="templateId" className="tk-select w-full">
+                <option value="">Tanpa template</option>
                 {templates.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.name}
@@ -158,12 +174,12 @@ export default async function InspectionsPage({
               <input
                 name="notes"
                 placeholder="Catatan"
-                className="w-full rounded border px-2 py-1 text-sm"
+                className="tk-input w-full"
               />
               <label className="flex items-center gap-2 text-xs">
                 <input type="checkbox" name="complete" /> Selesai
               </label>
-              <button type="submit" className="rounded bg-zinc-900 px-3 py-1 text-sm text-white">
+              <button type="submit" className="tk-btn-sm">
                 Buat inspeksi
               </button>
             </form>

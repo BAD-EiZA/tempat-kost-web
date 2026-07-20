@@ -36,12 +36,17 @@ export function CreateLeaseForm({
   const selectedRoom = filteredRooms.find((r) => r.id === roomId);
 
   return (
-    <form action={action} className="mt-8 rounded-xl border border-zinc-200 bg-white p-6">
-      <h2 className="font-medium">Buat kontrak (draft)</h2>
+    <form action={action} className="tk-card mt-8 p-6">
+      <h2 className="text-base font-semibold text-zinc-900">
+        Buat kontrak (draft)
+      </h2>
+      <p className="mt-1 text-sm text-zinc-500">
+        Isi properti, kamar, penyewa, dan nominal sewa.
+      </p>
       <input type="hidden" name="workspaceId" value={workspaceId} />
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <label className="flex flex-col gap-1 text-sm">
-          <span>Properti</span>
+        <label className="tk-field">
+          <span className="tk-label">Properti</span>
           <select
             name="propertyId"
             required
@@ -52,7 +57,7 @@ export function CreateLeaseForm({
               const first = rooms.find((r) => r.propertyId === next);
               setRoomId(first?.id ?? '');
             }}
-            className="rounded-lg border border-zinc-300 px-3 py-2"
+            className="tk-select"
           >
             {properties.map((p) => (
               <option key={p.id} value={p.id}>
@@ -61,14 +66,14 @@ export function CreateLeaseForm({
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span>Kamar</span>
+        <label className="tk-field">
+          <span className="tk-label">Kamar</span>
           <select
             name="roomId"
             required
             value={roomId}
             onChange={(e) => setRoomId(e.target.value)}
-            className="rounded-lg border border-zinc-300 px-3 py-2"
+            className="tk-select"
           >
             {filteredRooms.length === 0 ? (
               <option value="">Tidak ada kamar</option>
@@ -81,12 +86,12 @@ export function CreateLeaseForm({
             )}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-          <span>Penyewa</span>
+        <label className="tk-field sm:col-span-2">
+          <span className="tk-label">Penyewa</span>
           <select
             name="tenantId"
             required
-            className="rounded-lg border border-zinc-300 px-3 py-2"
+            className="tk-select"
             defaultValue={tenants[0]?.id}
           >
             {tenants.map((t) => (
@@ -96,26 +101,22 @@ export function CreateLeaseForm({
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span>Mulai</span>
+        <label className="tk-field">
+          <span className="tk-label">Mulai</span>
           <input
             type="date"
             name="startDate"
             required
             defaultValue={today}
-            className="rounded-lg border border-zinc-300 px-3 py-2"
+            className="tk-input"
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span>Selesai (opsional)</span>
-          <input
-            type="date"
-            name="endDate"
-            className="rounded-lg border border-zinc-300 px-3 py-2"
-          />
+        <label className="tk-field">
+          <span className="tk-label">Selesai (opsional)</span>
+          <input type="date" name="endDate" className="tk-input" />
         </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span>Sewa (IDR)</span>
+        <label className="tk-field">
+          <span className="tk-label">Sewa (IDR)</span>
           <input
             type="number"
             name="rentAmount"
@@ -123,25 +124,25 @@ export function CreateLeaseForm({
             step={1000}
             defaultValue={Number(selectedRoom?.rentAmount ?? 0)}
             key={`rent-${roomId}`}
-            className="rounded-lg border border-zinc-300 px-3 py-2"
+            className="tk-input"
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span>Deposit (IDR)</span>
+        <label className="tk-field">
+          <span className="tk-label">Deposit (IDR)</span>
           <input
             type="number"
             name="depositAmount"
             min={0}
             step={1000}
             defaultValue={0}
-            className="rounded-lg border border-zinc-300 px-3 py-2"
+            className="tk-input"
           />
         </label>
       </div>
       <button
         type="submit"
         disabled={!roomId}
-        className="mt-4 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
+        className="tk-btn mt-4 disabled:opacity-50"
       >
         Simpan draft
       </button>

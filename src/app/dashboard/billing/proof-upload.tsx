@@ -25,7 +25,7 @@ export function ProofUploadField({
         <input
           name={name}
           placeholder="atau paste URL"
-          className="w-full rounded border border-zinc-300 px-2 py-1 text-xs"
+          className="tk-input w-full !px-2 !py-1 !text-xs"
           onChange={(e) => setUrl(e.target.value)}
         />
       )}

@@ -1,7 +1,12 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/auth';
 import { apiFetch, listWorkspaces } from '@/lib/api';
+import {
+  EmptyState,
+  PageHeader,
+  WorkspaceChips,
+} from '@/components/ui';
+import { formatDateId } from '@/lib/format';
 
 async function markRead(formData: FormData) {
   'use server';
@@ -55,75 +60,74 @@ export default async function NotificationsPage({
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">Notifikasi</h1>
-        {workspaceId && (
-          <form action={markAll}>
-            <input type="hidden" name="workspaceId" value={workspaceId} />
-            <button
-              type="submit"
-              className="rounded border px-3 py-1 text-xs"
-            >
-              Tandai semua dibaca
-            </button>
-          </form>
-        )}
-      </div>
-      <p className="mt-1 text-xs text-zinc-500">
-        In-app · push subscription API ready (VAPID optional)
-      </p>
+      <PageHeader
+        title="Notifikasi"
+        description="Pesan in-app untuk workspace Anda."
+        actions={
+          workspaceId ? (
+            <form action={markAll}>
+              <input type="hidden" name="workspaceId" value={workspaceId} />
+              <button type="submit" className="tk-btn-secondary !text-xs">
+                Tandai semua dibaca
+              </button>
+            </form>
+          ) : null
+        }
+      />
       {workspaces.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {workspaces.map((ws) => (
-            <Link
-              key={ws.id}
-              href={`/dashboard/notifications?workspaceId=${ws.id}`}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
-                ws.id === workspaceId ? 'bg-zinc-900 text-white' : 'bg-zinc-100'
-              }`}
-            >
-              {ws.name}
-            </Link>
-          ))}
-        </div>
+        <WorkspaceChips
+          workspaces={workspaces}
+          workspaceId={workspaceId}
+          hrefFor={(id) => `/dashboard/notifications?workspaceId=${id}`}
+        />
       )}
       {error && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
+        <div className="tk-alert mt-4" data-variant="warning">
           {error}
         </div>
       )}
-      <ul className="mt-6 divide-y rounded-xl border bg-white">
-        {items.length === 0 ? (
-          <li className="p-6 text-sm text-zinc-500">Tidak ada notifikasi.</li>
-        ) : (
-          items.map((n) => (
+      {items.length === 0 ? (
+        <EmptyState
+          className="mt-6"
+          title="Tidak ada notifikasi"
+          body="Notifikasi baru akan muncul di sini."
+        />
+      ) : (
+      <ul className="mt-6 space-y-2">
+          {items.map((n) => (
             <li
               key={n.id}
-              className="flex flex-wrap items-start justify-between gap-2 px-6 py-3 text-sm"
+              className={`tk-card flex flex-wrap items-start justify-between gap-2 px-5 py-3 text-sm ${
+                n.status !== 'READ' ? 'ring-1 ring-emerald-200' : ''
+              }`}
             >
               <div>
-                <p className="font-medium">{n.title}</p>
-                <p className="text-xs text-zinc-600">{n.body}</p>
-                <p className="text-[10px] text-zinc-400">
-                  {String(n.createdAt).slice(0, 19).replace('T', ' ')} · {n.status}
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-semibold text-zinc-900">{n.title}</p>
+                  {n.status !== 'READ' ? (
+                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-900">
+                      Baru
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-1 text-xs text-zinc-600">{n.body}</p>
+                <p className="mt-1 text-[10px] text-zinc-400">
+                  {formatDateId(n.createdAt)}
                 </p>
               </div>
               {n.status !== 'READ' && (
                 <form action={markRead}>
                   <input type="hidden" name="id" value={n.id} />
                   <input type="hidden" name="workspaceId" value={workspaceId} />
-                  <button
-                    type="submit"
-                    className="rounded border px-2 py-1 text-xs"
-                  >
+                  <button type="submit" className="tk-btn-secondary !px-2 !py-1 !text-xs">
                     Tandai dibaca
                   </button>
                 </form>
               )}
             </li>
-          ))
-        )}
+          ))}
       </ul>
+      )}
     </>
   );
 }

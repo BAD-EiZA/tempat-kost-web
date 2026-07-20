@@ -2,6 +2,12 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/auth';
 import {
+  EmptyState,
+  PageHeader,
+  StatusBadge,
+  WorkspaceChips,
+} from '@/components/ui';
+import {
   apiFetch,
   bulkCreateRooms,
   createRoom,
@@ -10,23 +16,7 @@ import {
   listWorkspaces,
   updateRoom,
 } from '@/lib/api';
-
-function formatIdr(n: string | number) {
-  const v = typeof n === 'string' ? Number(n) : n;
-  if (Number.isNaN(v)) return String(n);
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(v);
-}
-
-const ROOM_STATUS: Record<string, { label: string; className: string }> = {
-  AVAILABLE: { label: 'Tersedia', className: 'bg-emerald-50 text-emerald-800' },
-  OCCUPIED: { label: 'Terisi', className: 'bg-blue-50 text-blue-800' },
-  MAINTENANCE: { label: 'Perbaikan', className: 'bg-amber-50 text-amber-800' },
-  INACTIVE: { label: 'Nonaktif', className: 'bg-zinc-100 text-zinc-700' },
-};
+import { formatIdr } from '@/lib/format';
 
 async function createRoomAction(formData: FormData) {
   'use server';
@@ -137,46 +127,32 @@ export default async function RoomsPage({
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Kamar</h1>
-          <p className="mt-1 text-sm text-zinc-600">
-            Status, harga, dan pembuatan kamar berurutan.
-          </p>
-        </div>
-        <Link
-          href={`/dashboard/properties?workspaceId=${workspaceId}`}
-          className="text-sm underline"
-        >
-          ← Properti
-        </Link>
-      </div>
+      <PageHeader
+        title="Kamar"
+        description="Status, harga, dan pembuatan kamar berurutan."
+        actions={
+          <Link
+            href={`/dashboard/properties?workspaceId=${workspaceId}`}
+            className="text-sm font-medium text-emerald-800 underline-offset-2 hover:underline"
+          >
+            Properti
+          </Link>
+        }
+      />
 
       {workspaces.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {workspaces.map((ws) => (
-            <Link
-              key={ws.id}
-              href={`/dashboard/rooms?workspaceId=${ws.id}`}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
-                ws.id === workspaceId
-                  ? 'bg-zinc-900 text-white'
-                  : 'bg-zinc-100 text-zinc-700'
-              }`}
-            >
-              {ws.name}
-            </Link>
-          ))}
-        </div>
+        <WorkspaceChips
+          workspaces={workspaces}
+          workspaceId={workspaceId}
+          hrefFor={(id) => `/dashboard/rooms?workspaceId=${id}`}
+        />
       )}
 
       {properties.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2">
           <Link
             href={`/dashboard/rooms?workspaceId=${workspaceId}`}
-            className={`rounded-full px-3 py-1 text-xs ${
-              !propertyId ? 'bg-zinc-800 text-white' : 'bg-zinc-50 text-zinc-600'
-            }`}
+            className={!propertyId ? 'tk-chip tk-chip-active' : 'tk-chip'}
           >
             Semua
           </Link>
@@ -184,11 +160,9 @@ export default async function RoomsPage({
             <Link
               key={p.id}
               href={`/dashboard/rooms?workspaceId=${workspaceId}&propertyId=${p.id}`}
-              className={`rounded-full px-3 py-1 text-xs ${
-                p.id === propertyId
-                  ? 'bg-zinc-800 text-white'
-                  : 'bg-zinc-50 text-zinc-600'
-              }`}
+              className={
+                p.id === propertyId ? 'tk-chip tk-chip-active' : 'tk-chip'
+              }
             >
               {p.name}
             </Link>
@@ -197,16 +171,20 @@ export default async function RoomsPage({
       )}
 
       {error && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <div className="tk-alert mt-4" data-variant="warning">
           {error}
         </div>
       )}
 
-      <ul aria-label="Daftar kamar" className="mt-6 divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white">
-        {rooms.length === 0 ? (
-          <li className="p-6 text-sm text-zinc-600">Belum ada kamar.</li>
-        ) : (
-          rooms.map((r) => (
+      {rooms.length === 0 ? (
+        <EmptyState
+          className="mt-6"
+          title="Belum ada kamar"
+          body="Buat kamar satuan atau bulk di form bawah."
+        />
+      ) : (
+      <ul aria-label="Daftar kamar" className="tk-list mt-6">
+          {rooms.map((r) => (
              <li key={r.id} className="px-4 py-4 text-sm sm:px-6">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
@@ -223,10 +201,8 @@ export default async function RoomsPage({
                   </p>
                 </div>
                 <div className="text-right text-xs text-zinc-600">
-                   <div className={`inline-block rounded-full px-2 py-0.5 font-medium ${ROOM_STATUS[r.status]?.className ?? 'bg-zinc-100 text-zinc-700'}`}>
-                     {ROOM_STATUS[r.status]?.label ?? r.status}
-                   </div>
-                  <div>{formatIdr(r.rentAmount)}</div>
+                   <StatusBadge status={r.status} kind="room" />
+                  <div className="mt-1 font-semibold tabular-nums">{formatIdr(r.rentAmount)}</div>
                 </div>
               </div>
               {propertyId && (
@@ -278,22 +254,22 @@ export default async function RoomsPage({
                   </select>
                   <button
                     type="submit"
-                    className="rounded-lg bg-zinc-900 px-3 py-2 text-xs text-white"
+                    className="tk-btn-sm"
                   >
                     Simpan penempatan
                   </button>
                 </form>
               )}
             </li>
-          ))
-        )}
+          ))}
       </ul>
+      )}
 
       {workspaceId && propertyId && (
         <div className="mt-8 grid gap-6 lg:grid-cols-2">
           <form
             action={createRoomAction}
-            className="rounded-xl border border-zinc-200 bg-white p-6"
+            className="tk-card p-6"
           >
             <h2 className="font-medium">Tambah 1 kamar</h2>
             <input type="hidden" name="workspaceId" value={workspaceId} />
@@ -304,7 +280,7 @@ export default async function RoomsPage({
                 name="name"
                 required
                 placeholder="A01"
-                className="rounded-lg border border-zinc-300 px-3 py-2"
+                className="tk-input"
               />
             </label>
             <label className="mt-3 flex flex-col gap-1 text-sm">
@@ -315,13 +291,13 @@ export default async function RoomsPage({
                 min={0}
                 step={1000}
                 defaultValue={0}
-                className="rounded-lg border border-zinc-300 px-3 py-2"
+                className="tk-input"
               />
             </label>
             <label className="mt-3 flex flex-col gap-1 text-sm">
               <span>Gedung</span>
-              <select name="buildingId" className="rounded-lg border px-3 py-2">
-                <option value="">—</option>
+              <select name="buildingId" className="tk-input">
+                <option value="">-</option>
                 {buildings.map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.name}
@@ -331,8 +307,8 @@ export default async function RoomsPage({
             </label>
             <label className="mt-3 flex flex-col gap-1 text-sm">
               <span>Lantai</span>
-              <select name="floorId" className="rounded-lg border px-3 py-2">
-                <option value="">—</option>
+              <select name="floorId" className="tk-input">
+                <option value="">-</option>
                 {floors.map((f) => (
                   <option key={f.id} value={f.id}>
                     {f.buildingName} / {f.name}
@@ -342,8 +318,8 @@ export default async function RoomsPage({
             </label>
             <label className="mt-3 flex flex-col gap-1 text-sm">
               <span>Tipe kamar</span>
-              <select name="roomTypeId" className="rounded-lg border px-3 py-2">
-                <option value="">—</option>
+              <select name="roomTypeId" className="tk-input">
+                <option value="">-</option>
                 {roomTypes.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.name}
@@ -353,7 +329,7 @@ export default async function RoomsPage({
             </label>
             <button
               type="submit"
-              className="mt-4 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white"
+              className="tk-btn mt-4"
             >
               Simpan
             </button>
@@ -361,7 +337,7 @@ export default async function RoomsPage({
 
           <form
             action={bulkRoomAction}
-            className="rounded-xl border border-zinc-200 bg-white p-6"
+            className="tk-card p-6"
           >
             <h2 className="font-medium">Buat kamar berurutan</h2>
             <input type="hidden" name="workspaceId" value={workspaceId} />
@@ -372,7 +348,7 @@ export default async function RoomsPage({
                 <input
                   name="prefix"
                   defaultValue="A"
-                  className="rounded-lg border border-zinc-300 px-3 py-2"
+                  className="tk-input"
                 />
               </label>
               <label className="flex flex-col gap-1">
@@ -382,7 +358,7 @@ export default async function RoomsPage({
                   type="number"
                   defaultValue={1}
                   min={1}
-                  className="rounded-lg border border-zinc-300 px-3 py-2"
+                  className="tk-input"
                 />
               </label>
               <label className="flex flex-col gap-1">
@@ -393,7 +369,7 @@ export default async function RoomsPage({
                   defaultValue={5}
                   min={1}
                   max={100}
-                  className="rounded-lg border border-zinc-300 px-3 py-2"
+                  className="tk-input"
                 />
               </label>
             </div>
@@ -405,12 +381,12 @@ export default async function RoomsPage({
                 min={0}
                 step={1000}
                 defaultValue={0}
-                className="rounded-lg border border-zinc-300 px-3 py-2"
+                className="tk-input"
               />
             </label>
             <button
               type="submit"
-              className="mt-4 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white"
+              className="tk-btn mt-4"
             >
               Buat kamar
             </button>

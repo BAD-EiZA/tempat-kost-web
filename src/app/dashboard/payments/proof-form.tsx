@@ -25,12 +25,12 @@ export function ProofPaymentForm({
         <input
           name="manualReference"
           placeholder="No. referensi"
-          className="rounded border border-zinc-300 px-2 py-1 text-xs"
+          className="tk-input !px-2 !py-1 !text-xs"
         />
         <input
           name="proofUrl"
           placeholder="URL bukti (Cloudinary)"
-          className="rounded border border-zinc-300 px-2 py-1 text-xs"
+          className="tk-input !px-2 !py-1 !text-xs"
           onChange={(e) => setPreview(e.target.value || null)}
         />
       </div>
@@ -39,17 +39,21 @@ export function ProofPaymentForm({
         <textarea
           name="proofBase64"
           rows={2}
-          className="mt-1 w-full rounded border border-zinc-300 px-2 py-1 font-mono text-[10px]"
+          className="tk-input mt-1 w-full font-mono !text-[10px]"
           placeholder="data:image/jpeg;base64,..."
         />
       </label>
       {preview ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={preview} alt="preview" className="max-h-24 rounded border" />
+        <img
+          src={preview}
+          alt="Pratinjau bukti pembayaran"
+          className="max-h-24 rounded-lg border border-zinc-200"
+        />
       ) : null}
       <button
         type="submit"
-        className="rounded bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white"
+        className="tk-btn-sm"
       >
         Upload bukti + AI OCR
       </button>

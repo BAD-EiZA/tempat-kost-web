@@ -364,7 +364,7 @@ export async function voidInvoice(id: string) {
   return apiFetch(`/v1/invoices/${id}/void`, { method: 'POST' });
 }
 
-// ponytail: loose payment shape — tighten when payment UI stabilizes
+// ponytail: loose payment shape; tighten when payment UI stabilizes
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Payment = any;
 

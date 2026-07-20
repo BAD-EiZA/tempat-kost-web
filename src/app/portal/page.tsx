@@ -5,6 +5,10 @@ import {
   resolvePortalTenantId,
   withTenant,
 } from '@/lib/portal-tenant';
+import { formatDateId, formatIdr } from '@/lib/format';
+import { EmptyState } from '@/components/ui';
+import { PortalPageHeader } from '@/components/portal/page-header';
+import { StatusBadge } from '@/components/portal/status-badge';
 
 type PortalHome = {
   outstanding: number;
@@ -23,14 +27,6 @@ type PortalHome = {
   } | null;
   maintenance: Array<{ id: string; title: string; status: string }>;
 };
-
-function formatIdr(n: number) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(n);
-}
 
 export default async function PortalHomePage({
   searchParams,
@@ -62,7 +58,7 @@ export default async function PortalHomePage({
 
   if (error) {
     return (
-      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
+      <div className="tk-alert" data-variant="warning">
         {error}
       </div>
     );
@@ -70,91 +66,129 @@ export default async function PortalHomePage({
 
   if (!tenantId) {
     return (
-      <div className="rounded-xl border border-zinc-200 bg-white p-6 text-sm text-zinc-600">
-        Akun belum terhubung ke profil penyewa. Minta pengelola mengisi email
-        yang sama dengan akun login Anda pada data penyewa.
-      </div>
+      <EmptyState
+        title="Profil penyewa belum terhubung"
+        body="Minta pengelola mengisi email yang sama dengan akun login Anda pada data penyewa."
+      />
     );
   }
 
+  const outstanding = home?.outstanding ?? 0;
+  const invoices = (home?.openInvoices ?? []).slice(0, 3);
+  const maintenance = (home?.maintenance ?? []).slice(0, 3);
+
   return (
-    <>
-      <h1 className="text-xl font-semibold">Halo, {tenantName}</h1>
-      {multi && (
-        <p className="mt-1 text-xs text-zinc-500">
-          Beberapa profil — ganti di pojok kanan atas.
-        </p>
-      )}
-      {home?.activeLease && (
-        <p className="mt-1 text-sm text-zinc-600">
-          {home.activeLease.property?.name} · {home.activeLease.room?.name} ·{' '}
-          {home.activeLease.leaseNumber}
-        </p>
-      )}
+    <div className="space-y-6">
+      <PortalPageHeader
+        title={`Halo, ${tenantName}`}
+        description={
+          <>
+            {home?.activeLease ? (
+              <span>
+                {home.activeLease.property?.name}
+                {home.activeLease.room?.name
+                  ? ` · ${home.activeLease.room.name}`
+                  : ''}
+                {home.activeLease.leaseNumber
+                  ? ` · ${home.activeLease.leaseNumber}`
+                  : ''}
+              </span>
+            ) : (
+              <span>Portal penyewa</span>
+            )}
+            {multi ? (
+              <span className="mt-1 block text-xs">
+                Beberapa profil - ganti di pojok kanan atas.
+              </span>
+            ) : null}
+          </>
+        }
+      />
 
-      <div className="mt-6 rounded-xl border border-zinc-200 bg-white p-5">
-        <p className="text-xs uppercase text-zinc-500">Tunggakan</p>
-        <p className="mt-1 text-2xl font-semibold">
-          {formatIdr(home?.outstanding ?? 0)}
+      <div className="tk-card p-5">
+        <p className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
+          Tunggakan
         </p>
-        <Link
-          href={withTenant('/portal/bills', tenantId)}
-          className="mt-2 inline-block text-xs underline"
-        >
-          Lihat tagihan / bayar
-        </Link>
-      </div>
-
-      <section className="mt-6">
-        <div className="flex items-center justify-between">
-          <h2 className="font-medium">Tagihan terbuka</h2>
+        <p className="mt-1 text-3xl font-semibold tabular-nums tracking-tight text-zinc-900">
+          {formatIdr(outstanding)}
+        </p>
+        {outstanding > 0 ? (
           <Link
             href={withTenant('/portal/bills', tenantId)}
-            className="text-xs underline"
+            className="tk-btn mt-4 w-full !py-2.5"
+          >
+            Bayar sekarang
+          </Link>
+        ) : (
+          <p className="mt-3 text-sm text-emerald-800">Tidak ada tunggakan</p>
+        )}
+      </div>
+
+      <section>
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold text-zinc-900">Tagihan terbuka</h2>
+          <Link
+            href={withTenant('/portal/bills', tenantId)}
+            className="text-xs font-medium text-emerald-800"
           >
             Semua
           </Link>
         </div>
-        <ul className="mt-2 divide-y divide-zinc-100 rounded-xl border border-zinc-200 bg-white">
-          {(home?.openInvoices ?? []).length === 0 ? (
-            <li className="p-4 text-sm text-zinc-500">Tidak ada tagihan.</li>
-          ) : (
-            home!.openInvoices.map((inv) => (
-              <li key={inv.id} className="px-4 py-3 text-sm">
-                <p className="font-medium">{inv.invoiceNumber}</p>
-                <p className="text-xs text-zinc-500">
-                  {inv.status} · due {String(inv.dueDate).slice(0, 10)} ·{' '}
-                  {formatIdr(Number(inv.total) - Number(inv.amountPaid))}
-                </p>
-              </li>
-            ))
-          )}
-        </ul>
+        {invoices.length === 0 ? (
+          <EmptyState title="Tidak ada tagihan terbuka" className="!py-6" />
+        ) : (
+          <ul className="space-y-2">
+            {invoices.map((inv) => {
+              const sisa = Number(inv.total) - Number(inv.amountPaid);
+              return (
+                <li key={inv.id} className="tk-card p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm font-medium text-zinc-900">
+                      {inv.invoiceNumber}
+                    </p>
+                    <StatusBadge status={inv.status} kind="invoice" />
+                  </div>
+                  <p className="mt-2 text-base font-semibold tabular-nums text-zinc-900">
+                    {formatIdr(sisa)}
+                  </p>
+                  <p className="mt-0.5 text-xs text-zinc-500">
+                    Jatuh tempo {formatDateId(inv.dueDate)}
+                  </p>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </section>
 
-      <section className="mt-6">
-        <div className="flex items-center justify-between">
-          <h2 className="font-medium">Maintenance aktif</h2>
+      <section>
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold text-zinc-900">Maintenance</h2>
           <Link
             href={withTenant('/portal/maintenance', tenantId)}
-            className="text-xs underline"
+            className="text-xs font-medium text-emerald-800"
           >
             Ajukan
           </Link>
         </div>
-        <ul className="mt-2 divide-y divide-zinc-100 rounded-xl border border-zinc-200 bg-white">
-          {(home?.maintenance ?? []).length === 0 ? (
-            <li className="p-4 text-sm text-zinc-500">Tidak ada laporan.</li>
-          ) : (
-            home!.maintenance.map((m) => (
-              <li key={m.id} className="px-4 py-3 text-sm">
-                {m.title}{' '}
-                <span className="text-xs text-zinc-500">{m.status}</span>
+        {maintenance.length === 0 ? (
+          <EmptyState title="Tidak ada laporan aktif" className="!py-6" />
+        ) : (
+          <ul className="tk-list">
+            {maintenance.map((m) => (
+              <li
+                key={m.id}
+                className="flex items-center justify-between gap-3 border-b border-zinc-100 px-4 py-3 text-sm last:border-0"
+              >
+                <span className="min-w-0 truncate font-medium text-zinc-900">
+                  {m.title}
+                </span>
+                <StatusBadge status={m.status} kind="maintenance" />
               </li>
-            ))
-          )}
-        </ul>
+            ))}
+          </ul>
+        )}
       </section>
-    </>
+    </div>
   );
 }

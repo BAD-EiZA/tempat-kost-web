@@ -2,6 +2,12 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/auth';
 import { createTenant, listTenants, listWorkspaces } from '@/lib/api';
+import {
+  EmptyState,
+  PageHeader,
+  StatusBadge,
+  WorkspaceChips,
+} from '@/components/ui';
 
 async function createTenantAction(formData: FormData) {
   'use server';
@@ -38,93 +44,92 @@ export default async function TenantsPage({
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">Penyewa</h1>
-      <p className="mt-1 text-sm text-zinc-600">Profil tenant per workspace.</p>
+      <PageHeader
+        title="Penyewa"
+        description="Profil tenant per workspace."
+        actions={
+          workspaceId ? (
+            <Link
+              href={`/dashboard/leases?workspaceId=${workspaceId}`}
+              className="text-sm font-medium text-emerald-800 underline-offset-2 hover:underline"
+            >
+              Ke kontrak
+            </Link>
+          ) : null
+        }
+      />
 
       {workspaces.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {workspaces.map((ws) => (
-            <Link
-              key={ws.id}
-              href={`/dashboard/tenants?workspaceId=${ws.id}`}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
-                ws.id === workspaceId
-                  ? 'bg-zinc-900 text-white'
-                  : 'bg-zinc-100 text-zinc-700'
-              }`}
-            >
-              {ws.name}
-            </Link>
-          ))}
-        </div>
+        <WorkspaceChips
+          workspaces={workspaces}
+          workspaceId={workspaceId}
+          hrefFor={(id) => `/dashboard/tenants?workspaceId=${id}`}
+        />
       )}
 
       {error && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
+        <div className="tk-alert mt-4" data-variant="warning">
           {error}
         </div>
       )}
 
-      <ul className="mt-6 divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white">
-        {tenants.length === 0 ? (
-          <li className="p-6 text-sm text-zinc-600">Belum ada penyewa.</li>
-        ) : (
-          tenants.map((t) => (
-            <li key={t.id} className="flex justify-between px-6 py-4 text-sm">
-              <div>
-                <p className="font-medium">{t.fullName}</p>
-                <p className="text-xs text-zinc-500">
-                  {[t.phone, t.email].filter(Boolean).join(' · ') || '—'} ·{' '}
-                  {t.status} · {t._count?.leases ?? 0} kontrak
+      {tenants.length === 0 ? (
+        <EmptyState
+          className="mt-6"
+          title="Belum ada penyewa"
+          body="Tambah profil penyewa sebelum membuat kontrak."
+        />
+      ) : (
+        <ul className="mt-6 space-y-2">
+          {tenants.map((t) => (
+            <li
+              key={t.id}
+              className="tk-card flex flex-wrap items-center justify-between gap-3 px-5 py-4"
+            >
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-semibold text-zinc-900">{t.fullName}</p>
+                  <StatusBadge status={t.status} kind="tenant" />
+                </div>
+                <p className="mt-1 text-xs text-zinc-500">
+                  {[t.phone, t.email].filter(Boolean).join(' · ') ||
+                    'Kontak belum diisi'}
+                  {' · '}
+                  {t._count?.leases ?? 0} kontrak
                 </p>
               </div>
               <Link
                 href={`/dashboard/tenants/${t.id}?workspaceId=${workspaceId}`}
-                className="text-xs underline"
+                className="tk-btn-secondary !px-3 !py-1.5 !text-xs"
               >
-                Dokumen
+                Detail
               </Link>
             </li>
-          ))
-        )}
-      </ul>
+          ))}
+        </ul>
+      )}
 
       {workspaceId && (
-        <form
-          action={createTenantAction}
-          className="mt-8 rounded-xl border border-zinc-200 bg-white p-6"
-        >
-          <h2 className="font-medium">Tambah penyewa</h2>
+        <form action={createTenantAction} className="tk-card mt-8 p-6">
+          <h2 className="text-base font-semibold text-zinc-900">
+            Tambah penyewa
+          </h2>
           <input type="hidden" name="workspaceId" value={workspaceId} />
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-              <span>Nama lengkap</span>
-              <input
-                name="fullName"
-                required
-                className="rounded-lg border border-zinc-300 px-3 py-2"
-              />
+            <label className="tk-field sm:col-span-2">
+              <span className="tk-label">Nama lengkap</span>
+              <input name="fullName" required className="tk-input" />
             </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span>WhatsApp / telepon</span>
-              <input
-                name="phone"
-                className="rounded-lg border border-zinc-300 px-3 py-2"
-              />
+            <label className="tk-field">
+              <span className="tk-label">WhatsApp / telepon</span>
+              <input name="phone" type="tel" className="tk-input" />
             </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span>Email</span>
-              <input
-                name="email"
-                type="email"
-                className="rounded-lg border border-zinc-300 px-3 py-2"
-              />
+            <label className="tk-field">
+              <span className="tk-label">Email</span>
+              <input name="email" type="email" className="tk-input" />
             </label>
           </div>
-          <button
-            type="submit"
-            className="mt-4 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white"
-          >
+          <button type="submit" className="tk-btn mt-4">
             Simpan
           </button>
         </form>

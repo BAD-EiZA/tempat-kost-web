@@ -63,23 +63,23 @@ export default function AdminPage() {
           value={secret}
           onChange={(e) => setSecret(e.target.value)}
           placeholder="x-internal-secret"
-          className="flex-1 rounded-lg border px-3 py-2 text-sm"
+          className="flex-1 tk-input"
         />
         <button
           type="button"
           onClick={load}
-          className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white"
+          className="tk-btn"
         >
           Load
         </button>
       </div>
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
       {overview && (
-        <pre className="mt-6 overflow-auto rounded-xl border bg-white p-4 text-xs">
+        <pre className="mt-6 overflow-auto tk-card p-4 text-xs">
           {JSON.stringify(overview, null, 2)}
         </pre>
       )}
-      <ul className="mt-6 divide-y rounded-xl border bg-white">
+      <ul className="tk-list mt-6">
         {workspaces.map((ws) => (
           <li
             key={ws.id}
@@ -88,14 +88,14 @@ export default function AdminPage() {
             <div>
               <p className="font-medium">{ws.name}</p>
               <p className="text-xs text-zinc-500">
-                {ws.slug} · {ws.subscription?.status ?? '—'} ·{' '}
-                {ws.subscription?.plan?.name ?? '—'}
+                {ws.slug} · {ws.subscription?.status ?? '-'} ·{' '}
+                {ws.subscription?.plan?.name ?? '-'}
               </p>
             </div>
             <button
               type="button"
               onClick={() => extend(ws.id)}
-              className="rounded border px-2 py-1 text-xs"
+              className="tk-btn-secondary !px-2 !py-1 !text-xs"
             >
               +14d trial
             </button>

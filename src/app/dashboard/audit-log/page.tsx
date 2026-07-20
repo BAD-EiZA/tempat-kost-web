@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { requireAuth } from '@/lib/auth';
 import { listAuditLogs, listWorkspaces } from '@/lib/api';
+import { PageHeader, WorkspaceChips } from '@/components/ui';
 
 type SearchParams = {
   workspaceId?: string;
@@ -52,53 +53,44 @@ export default async function AuditLogPage({
   const currentParams = { ...params, workspaceId };
   return (
     <>
-      <h1 className="text-2xl font-semibold">Audit log</h1>
-      <p className="mt-1 text-sm text-zinc-600">
-        Riwayat aktivitas dan perubahan workspace.
-      </p>
+      <PageHeader
+        title="Audit log"
+        description="Riwayat aktivitas dan perubahan workspace."
+      />
 
       {workspaces.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {workspaces.map((workspace) => (
-            <Link
-              key={workspace.id}
-              href={href({ workspaceId: workspace.id }, 1)}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
-                workspace.id === workspaceId
-                  ? 'bg-zinc-900 text-white'
-                  : 'bg-zinc-100 text-zinc-700'
-              }`}
-            >
-              {workspace.name}
-            </Link>
-          ))}
-        </div>
+        <WorkspaceChips
+          workspaces={workspaces}
+          workspaceId={workspaceId}
+          hrefFor={(id) => href({ workspaceId: id }, 1)}
+          className="mt-4"
+        />
       )}
 
-      <form className="mt-6 grid gap-3 rounded-xl border border-zinc-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-5">
+      <form className="tk-card mt-6 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-5">
         <input type="hidden" name="workspaceId" value={workspaceId} />
         <label className="text-xs text-zinc-600">
           Action
-          <input name="action" defaultValue={params.action} placeholder="invoice.issued" className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm" />
+          <input name="action" defaultValue={params.action} placeholder="invoice.issued" className="tk-input mt-1 w-full" />
         </label>
         <label className="text-xs text-zinc-600">
           Entity
-          <input name="entityType" defaultValue={params.entityType} placeholder="invoice" className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm" />
+          <input name="entityType" defaultValue={params.entityType} placeholder="invoice" className="tk-input mt-1 w-full" />
         </label>
         <label className="text-xs text-zinc-600">
           Dari
-          <input type="date" name="from" defaultValue={params.from} className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm" />
+          <input type="date" name="from" defaultValue={params.from} className="tk-input mt-1 w-full" />
         </label>
         <label className="text-xs text-zinc-600">
           Sampai
-          <input type="date" name="to" defaultValue={params.to} className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm" />
+          <input type="date" name="to" defaultValue={params.to} className="tk-input mt-1 w-full" />
         </label>
-        <button type="submit" className="self-end rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white">
+        <button type="submit" className="self-end tk-btn">
           Filter
         </button>
       </form>
 
-      {error && <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">{error}</div>}
+      {error && <div className="tk-alert mt-4" data-variant="warning">{error}</div>}
 
       <div className="mt-6 overflow-x-auto rounded-xl border border-zinc-200 bg-white">
         <table className="min-w-full text-left text-sm">

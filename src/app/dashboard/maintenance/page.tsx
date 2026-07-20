@@ -1,7 +1,12 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/auth';
 import { apiFetch, listProperties, listRooms, listWorkspaces } from '@/lib/api';
+import {
+  EmptyState,
+  PageHeader,
+  StatusBadge,
+  WorkspaceChips,
+} from '@/components/ui';
 
 type Maint = {
   id: string;
@@ -134,58 +139,51 @@ export default async function MaintenancePage({
 
   return (
     <>
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <h1 className="text-2xl font-semibold">Pemeliharaan</h1>
-        <p className="text-xs text-zinc-500">
-          {open} terbuka · SLA: lebih dari 24 jam kuning, 72 jam merah
-        </p>
-      </div>
+      <PageHeader
+        title="Pemeliharaan"
+        description={`${open} tiket terbuka · SLA: 24j kuning, 72j merah`}
+      />
       {workspaces.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {workspaces.map((ws) => (
-            <Link
-              key={ws.id}
-              href={`/dashboard/maintenance?workspaceId=${ws.id}`}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
-                ws.id === workspaceId
-                  ? 'bg-zinc-900 text-white'
-                  : 'bg-zinc-100'
-              }`}
-            >
-              {ws.name}
-            </Link>
-          ))}
-        </div>
+        <WorkspaceChips
+          workspaces={workspaces}
+          workspaceId={workspaceId}
+          hrefFor={(id) => `/dashboard/maintenance?workspaceId=${id}`}
+        />
       )}
       {error && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
+        <div className="tk-alert mt-4" data-variant="warning">
           {error}
         </div>
       )}
-      <ul aria-label="Daftar tiket pemeliharaan" className="mt-6 divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white">
-        {items.length === 0 ? (
-          <li className="p-6 text-sm text-zinc-500">Belum ada tiket.</li>
-        ) : (
-          items.map((m) => {
+      {items.length === 0 ? (
+        <EmptyState
+          className="mt-6"
+          title="Belum ada tiket"
+          body="Buat laporan kerusakan dari form di bawah."
+        />
+      ) : (
+      <ul aria-label="Daftar tiket pemeliharaan" className="mt-6 space-y-2">
+          {items.map((m) => {
             const sla = slaLabel(m.createdAt, m.status);
             return (
               <li
                 key={m.id}
-                 className="flex flex-col items-stretch gap-3 px-4 py-4 text-sm sm:px-6 lg:flex-row lg:items-start lg:justify-between"
+                className="tk-card flex flex-col items-stretch gap-3 px-4 py-4 text-sm sm:px-5 lg:flex-row lg:items-start lg:justify-between"
               >
                 <div>
-                  <p className="font-medium">
-                    {m.title}{' '}
-                    <span className="text-xs font-normal text-zinc-500">
-                       {STATUS_LABEL[m.status] ?? m.status} · {URGENCY_LABEL[m.urgency] ?? m.urgency}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-semibold text-zinc-900">{m.title}</p>
+                    <StatusBadge status={m.status} kind="maintenance" />
+                    <span className="text-xs text-zinc-500">
+                      {URGENCY_LABEL[m.urgency] ?? m.urgency}
                     </span>
                     {sla && (
-                      <span className={`ml-2 text-xs ${sla.cls}`}>
+                      <span className={`text-xs font-medium ${sla.cls}`}>
                         {sla.text}
                       </span>
                     )}
-                  </p>
-                  <p className="text-xs text-zinc-500">
+                  </div>
+                  <p className="mt-1 text-xs text-zinc-500">
                     {m.property?.name}
                     {m.room ? ` / ${m.room.name}` : ''}
                     {m.tenant ? ` · ${m.tenant.fullName}` : ''}
@@ -206,7 +204,7 @@ export default async function MaintenancePage({
                         'id-ID',
                       )}
                       {m.estimateHigh != null
-                        ? ` – Rp ${Number(m.estimateHigh).toLocaleString('id-ID')}`
+                        ? ` - Rp ${Number(m.estimateHigh).toLocaleString('id-ID')}`
                         : ''}
                       {m.aiJson?.estimate?.durationHint
                         ? ` · ${m.aiJson.estimate.durationHint}`
@@ -223,7 +221,7 @@ export default async function MaintenancePage({
                     <p className="text-[10px] text-zinc-500">
                        Kerusakan: {m.aiJson.damage.severitySuggestion}
                       {m.aiJson.damage.observations?.[0]
-                        ? ` — ${m.aiJson.damage.observations[0]}`
+                        ? ` - ${m.aiJson.damage.observations[0]}`
                         : ''}
                     </p>
                   )}
@@ -241,7 +239,7 @@ export default async function MaintenancePage({
                          aria-label={`Petugas untuk ${m.title}`}
                         name="assignedTo"
                         defaultValue={m.assignedTo ?? ''}
-                         className="rounded-lg border border-zinc-300 px-2 py-2 text-xs"
+                         className="tk-input !px-2 !py-2 !text-xs"
                       >
                          <option value="">Belum ditugaskan</option>
                         {members.map((mem) => (
@@ -258,7 +256,7 @@ export default async function MaintenancePage({
                         defaultValue={
                           m.status === 'NEW' ? 'ASSIGNED' : m.status
                         }
-                         className="rounded-lg border border-zinc-300 px-2 py-2 text-xs"
+                         className="tk-input !px-2 !py-2 !text-xs"
                       >
                          {Object.entries(STATUS_LABEL).filter(([value]) => value !== 'NEW').map(([value, label]) => (
                            <option key={value} value={value}>{label}</option>
@@ -266,7 +264,7 @@ export default async function MaintenancePage({
                       </select>
                       <button
                         type="submit"
-                        className="rounded bg-zinc-900 px-2 py-1 text-xs text-white"
+                        className="tk-btn-sm"
                       >
                          Perbarui
                       </button>
@@ -275,16 +273,16 @@ export default async function MaintenancePage({
                 )}
               </li>
             );
-          })
-        )}
+          })}
       </ul>
+      )}
 
       {workspaceId && properties.length > 0 && (
         <form
           action={createAction}
-          className="mt-8 rounded-xl border border-zinc-200 bg-white p-6"
+          className="tk-card mt-8 p-6"
         >
-          <h2 className="font-medium">Buat tiket</h2>
+          <h2 className="text-base font-semibold text-zinc-900">Buat tiket</h2>
           <input type="hidden" name="workspaceId" value={workspaceId} />
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1 text-sm">
@@ -292,7 +290,7 @@ export default async function MaintenancePage({
               <select
                 name="propertyId"
                 required
-                className="rounded-lg border border-zinc-300 px-3 py-2"
+                className="tk-input"
               >
                 {properties.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -305,9 +303,9 @@ export default async function MaintenancePage({
               <span>Kamar (opsional)</span>
               <select
                 name="roomId"
-                className="rounded-lg border border-zinc-300 px-3 py-2"
+                className="tk-input"
               >
-                <option value="">—</option>
+                <option value="">-</option>
                 {rooms.map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.property?.name ? `${r.property.name} / ` : ''}
@@ -321,7 +319,7 @@ export default async function MaintenancePage({
               <select
                 name="urgency"
                 defaultValue="medium"
-                className="rounded-lg border border-zinc-300 px-3 py-2"
+                className="tk-input"
               >
                  <option value="low">Rendah</option>
                  <option value="medium">Sedang</option>
@@ -334,7 +332,7 @@ export default async function MaintenancePage({
               <input
                 name="category"
                 placeholder="listrik / air / AC"
-                className="rounded-lg border border-zinc-300 px-3 py-2"
+                className="tk-input"
               />
             </label>
             <label className="flex flex-col gap-1 text-sm sm:col-span-2">
@@ -342,7 +340,7 @@ export default async function MaintenancePage({
               <input
                 name="title"
                 required
-                className="rounded-lg border border-zinc-300 px-3 py-2"
+                className="tk-input"
               />
             </label>
             <label className="flex flex-col gap-1 text-sm sm:col-span-2">
@@ -351,16 +349,16 @@ export default async function MaintenancePage({
                 name="description"
                 required
                 rows={3}
-                className="rounded-lg border border-zinc-300 px-3 py-2"
+                className="tk-input"
               />
             </label>
             <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-              <span>Foto URL (koma/baris) — upload Cloudinary di Files dulu</span>
+              <span>Foto URL (koma/baris) - upload Cloudinary di Files dulu</span>
               <textarea
                 name="photoUrls"
                 rows={2}
                 placeholder="https://…/foto.jpg"
-                className="rounded-lg border border-zinc-300 px-3 py-2"
+                className="tk-input"
               />
             </label>
             <label className="flex items-center gap-2 text-sm sm:col-span-2">
@@ -370,7 +368,7 @@ export default async function MaintenancePage({
           </div>
           <button
             type="submit"
-            className="mt-4 rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white"
+            className="tk-btn mt-4"
           >
             Simpan
           </button>

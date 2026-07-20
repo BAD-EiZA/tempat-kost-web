@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { EmptyState, PageHeader } from '@/components/ui';
 
 type Kind = 'rooms' | 'tenants' | 'leases' | 'payments' | 'expenses';
 
@@ -70,7 +71,7 @@ async function parseXlsx(file: File): Promise<{ headers: string[]; rows: string[
   // fall back: instruct CSV. For real xlsx use simple regex extract on shared strings if present.
   // Lightweight approach: if FileReader text fails, try sheetjs-free XML from zip via JSZip-less parse.
   try {
-    // Dynamic import only if package exists — otherwise throw to CSV path
+    // Dynamic import only if package exists; otherwise throw to CSV path
     // ponytail: full xlsx via SheetJS when volume justifies; now: TSV from Excel "Save as CSV" + simple table paste
     const text = await file.text();
     if (text.includes(',') || text.includes(';') || text.includes('\t')) {
@@ -186,7 +187,7 @@ function unzipLocal(bytes: Uint8Array): Record<string, string> {
     }
     i = dataStart + compSize;
   }
-  // Fallback: many xlsx use deflate — try inflateSync-like via Response if available
+  // Fallback: many xlsx use deflate; try inflateSync-like via Response if available
   // If empty, return {}
   if (Object.keys(out).length === 0) {
     // try find uncompressed XML snippets in raw bytes for sharedStrings
@@ -329,22 +330,52 @@ function ImportInner() {
     }
   }
 
+  const step = !headers.length
+    ? 1
+    : !preview
+      ? 2
+      : !confirmed
+        ? 3
+        : 4;
+
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="text-2xl font-semibold tracking-tight">Import data</h1>
-      <p className="mt-1 text-sm text-zinc-600">
-        Unggah berkas, periksa pemetaan dan validasi, lalu konfirmasi sebelum
-        mengimpor.
-      </p>
+      <PageHeader
+        title="Import data"
+        description="Unggah, validasi, petakan kolom, lalu konfirmasi impor."
+      />
       {!workspaceId && (
-        <p className="mt-4 text-sm text-amber-700">
-          Workspace belum dipilih. Buka halaman ini dari menu workspace.
-        </p>
+        <EmptyState
+          className="mt-4"
+          title="Workspace belum dipilih"
+          body="Buka halaman ini dari menu workspace atau pilih workspace dulu."
+        />
       )}
-      <div className="mt-6 space-y-3 rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm">
+
+      <ol className="mt-6 flex flex-wrap gap-2 text-xs">
+        {[
+          [1, 'Unggah'],
+          [2, 'Validasi'],
+          [3, 'Pemetaan'],
+          [4, 'Konfirmasi'],
+        ].map(([n, label]) => (
+          <li
+            key={String(n)}
+            className={
+              step >= Number(n)
+                ? 'tk-chip tk-chip-active'
+                : 'tk-chip'
+            }
+          >
+            {n}. {label}
+          </li>
+        ))}
+      </ol>
+
+      <div className="tk-card mt-4 space-y-4 p-6">
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium">Jenis data</span>
+          <label className="tk-field">
+            <span className="tk-label">Jenis data</span>
             <select
               value={kind}
               onChange={(e) => {
@@ -352,21 +383,23 @@ function ImportInner() {
                 setPreview(null);
                 setConfirmed(false);
               }}
-              className="rounded-xl border border-zinc-200 px-3 py-2"
+              className="tk-select"
             >
               {Object.entries(KIND_LABEL).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
+                <option key={value} value={value}>
+                  {label}
+                </option>
               ))}
             </select>
           </label>
           {(kind === 'rooms' || kind === 'leases') && (
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium">Properti tujuan</span>
+            <label className="tk-field">
+              <span className="tk-label">Properti tujuan</span>
               <select
                 value={propertyId}
                 required
                 onChange={(e) => setPropertyId(e.target.value)}
-                className="rounded-xl border border-zinc-200 px-3 py-2"
+                className="tk-select"
               >
                 <option value="">Pilih properti</option>
                 {properties.map((property) => (
@@ -378,9 +411,11 @@ function ImportInner() {
             </label>
           )}
         </div>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium">Berkas sumber</span>
-          <span className="text-xs text-zinc-500">CSV atau TSV disarankan. XLSX sederhana didukung terbatas.</span>
+        <label className="tk-field">
+          <span className="tk-label">Berkas sumber</span>
+          <span className="text-xs text-zinc-500">
+            CSV atau TSV disarankan. XLSX sederhana didukung terbatas.
+          </span>
           <input
             type="file"
             accept=".csv,.tsv,.txt,.xlsx,.xls,text/csv,text/tab-separated-values,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -401,9 +436,9 @@ function ImportInner() {
             type="button"
             onClick={() => void doPreview()}
             disabled={!workspaceId || !rows.length || busy !== null}
-            className="rounded-xl bg-zinc-900 px-4 py-2 text-sm text-white disabled:opacity-50"
+            className="tk-btn disabled:opacity-50"
           >
-            {busy === 'preview' ? 'Memvalidasi…' : 'Periksa data'}
+            {busy === 'preview' ? 'Memvalidasi…' : '1. Periksa data'}
           </button>
           <button
             type="button"
@@ -415,9 +450,9 @@ function ImportInner() {
               ((kind === 'rooms' || kind === 'leases') && !propertyId) ||
               (preview.dryRun?.invalid ?? 0) === rows.length
             }
-            className="rounded-xl border border-zinc-200 px-4 py-2 text-sm disabled:opacity-50"
+            className="tk-btn-secondary disabled:opacity-50"
           >
-            {busy === 'commit' ? 'Mengimpor…' : 'Impor data'}
+            {busy === 'commit' ? 'Mengimpor…' : '2. Impor data'}
           </button>
           {errorCsv && (
             <button
@@ -435,14 +470,14 @@ function ImportInner() {
         {preview?.dryRun && (
           <div className="rounded-xl border border-zinc-100 bg-zinc-50 p-3 text-xs">
             <p>
-               Hasil validasi: <b>{preview.dryRun.valid}</b> valid ·{' '}
-               <b>{preview.dryRun.invalid}</b> tidak valid
+              Hasil validasi: <b>{preview.dryRun.valid}</b> valid ·{' '}
+              <b>{preview.dryRun.invalid}</b> tidak valid
             </p>
             {preview.dryRun.sampleErrors.length > 0 && (
               <ul className="mt-1 list-disc pl-4 text-red-700">
                 {preview.dryRun.sampleErrors.map((e) => (
                   <li key={e.row}>
-                     Baris {e.row}: {e.message}
+                    Baris {e.row}: {e.message}
                   </li>
                 ))}
               </ul>
@@ -451,11 +486,13 @@ function ImportInner() {
         )}
 
         {preview && (
-          <div className="space-y-2">
-             <p className="text-sm font-medium">Pemetaan kolom (dapat diubah)</p>
+          <div className="space-y-3 border-t border-zinc-100 pt-4">
+            <p className="text-sm font-semibold text-zinc-900">
+              Pemetaan kolom
+            </p>
             {preview.targetFields.map((field) => (
               <label key={field} className="flex items-center gap-2 text-xs">
-                <span className="w-28 font-mono">{field}</span>
+                <span className="w-28 font-mono text-zinc-600">{field}</span>
                 <select
                   value={mapping[field] ?? ''}
                   onChange={(e) =>
@@ -464,9 +501,9 @@ function ImportInner() {
                       [field]: e.target.value || null,
                     }))
                   }
-                  className="flex-1 rounded-lg border border-zinc-200 px-2 py-1"
+                  className="tk-select flex-1 !py-1 !text-xs"
                 >
-                   <option value="">Jangan impor kolom ini</option>
+                  <option value="">Jangan impor kolom ini</option>
                   {headers.map((h) => (
                     <option key={h} value={h}>
                       {h}
@@ -475,13 +512,19 @@ function ImportInner() {
                 </select>
               </label>
             ))}
-             <div className="overflow-auto rounded-xl border">
-               <table className="min-w-full text-xs">
-                 <caption className="sr-only">Pratinjau data yang akan diimpor</caption>
+            <div className="overflow-auto rounded-xl border border-zinc-200">
+              <table className="min-w-full text-xs">
+                <caption className="sr-only">
+                  Pratinjau data yang akan diimpor
+                </caption>
                 <thead>
                   <tr className="bg-zinc-100">
                     {headers.map((h) => (
-                       <th scope="col" key={h} className="px-2 py-1 text-left font-medium">
+                      <th
+                        scope="col"
+                        key={h}
+                        className="px-2 py-1 text-left font-medium"
+                      >
                         {h}
                       </th>
                     ))}
@@ -489,7 +532,7 @@ function ImportInner() {
                 </thead>
                 <tbody>
                   {preview.preview.map((row, i) => (
-                    <tr key={i} className="border-t">
+                    <tr key={i} className="border-t border-zinc-100">
                       {row.map((c, j) => (
                         <td key={j} className="px-2 py-1">
                           {c}
@@ -499,23 +542,35 @@ function ImportInner() {
                   ))}
                 </tbody>
               </table>
-             </div>
-             <label className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
-               <input
-                 type="checkbox"
-                 checked={confirmed}
-                 onChange={(e) => setConfirmed(e.target.checked)}
-                 className="mt-0.5"
-               />
-               <span>
-                 Saya sudah memeriksa pemetaan. Impor akan membuat hingga{' '}
-                 <b>{preview.dryRun?.valid ?? rows.length} data</b> dan tidak dapat dibatalkan dari halaman ini.
-               </span>
-             </label>
-           </div>
-         )}
-        {result && <p role="status" className="text-sm text-emerald-700">{result}</p>}
-        {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+            </div>
+            <label
+              className="tk-alert flex items-start gap-2 text-sm"
+              data-variant="warning"
+            >
+              <input
+                type="checkbox"
+                checked={confirmed}
+                onChange={(e) => setConfirmed(e.target.checked)}
+                className="mt-0.5"
+              />
+              <span>
+                Saya sudah memeriksa pemetaan. Impor akan membuat hingga{' '}
+                <b>{preview.dryRun?.valid ?? rows.length} data</b> dan tidak
+                dapat dibatalkan dari halaman ini.
+              </span>
+            </label>
+          </div>
+        )}
+        {result && (
+          <div className="tk-alert" data-variant="success" role="status">
+            {result}
+          </div>
+        )}
+        {error && (
+          <div className="tk-alert" data-variant="error" role="alert">
+            {error}
+          </div>
+        )}
       </div>
     </div>
   );

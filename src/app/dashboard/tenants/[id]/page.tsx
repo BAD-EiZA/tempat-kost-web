@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/auth';
 import { apiFetch } from '@/lib/api';
 import { DocUpload } from './doc-upload';
+import { PageHeader, StatusBadge } from '@/components/ui';
+import { formatDateId } from '@/lib/format';
 
 const OCR_FIELDS = [
   { key: 'fullName', label: 'Nama' },
@@ -93,74 +95,94 @@ export default async function TenantDetailPage({
     error = e instanceof Error ? e.message : 'Gagal';
   }
 
+  const description = tenant
+    ? [
+        tenant.nik ? `NIK ${tenant.nik}` : null,
+        tenant.gender,
+        tenant.dateOfBirth ? formatDateId(tenant.dateOfBirth) : null,
+      ]
+        .filter(Boolean)
+        .join(' · ') || 'Profil penyewa'
+    : undefined;
+
   return (
     <>
-      <Link
-        href={`/dashboard/tenants?workspaceId=${workspaceId}`}
-        className="text-sm text-zinc-600 underline decoration-zinc-300 underline-offset-2 hover:text-zinc-900"
-      >
-        ← Penyewa
-      </Link>
+      <PageHeader
+        title={tenant?.fullName ?? 'Detail penyewa'}
+        description={description}
+        actions={
+          <Link
+            href={`/dashboard/tenants?workspaceId=${workspaceId}`}
+            className="text-sm font-medium text-emerald-800 underline-offset-2 hover:underline"
+          >
+            Kembali
+          </Link>
+        }
+      />
+      {tenant ? (
+        <div className="mt-2">
+          <StatusBadge status={tenant.status} kind="tenant" />
+        </div>
+      ) : null}
+
       {error && (
-        <div className="mt-4 rounded-xl border border-amber-200/80 bg-amber-50 p-3 text-sm text-amber-900">
+        <div className="tk-alert mt-4" data-variant="warning">
           {error}
         </div>
       )}
+
       {tenant && (
         <>
-          <div className="mt-4 rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {tenant.fullName}
-            </h1>
-            <p className="mt-1 text-sm text-zinc-600">
-              {tenant.status}
-              {tenant.nik ? ` · NIK ${tenant.nik}` : ''}
-              {tenant.gender ? ` · ${tenant.gender}` : ''}
-            </p>
-            <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
+          <div className="tk-card mt-4 p-6">
+            <h2 className="text-sm font-semibold text-zinc-900">Kontak</h2>
+            <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
               <div>
                 <dt className="text-xs text-zinc-500">Telepon</dt>
-                <dd>{tenant.phone ?? '—'}</dd>
+                <dd className="mt-0.5 font-medium text-zinc-900">
+                  {tenant.phone ?? '-'}
+                </dd>
               </div>
               <div>
                 <dt className="text-xs text-zinc-500">Email</dt>
-                <dd>{tenant.email ?? '—'}</dd>
+                <dd className="mt-0.5 font-medium text-zinc-900">
+                  {tenant.email ?? '-'}
+                </dd>
               </div>
               <div className="sm:col-span-2">
                 <dt className="text-xs text-zinc-500">Alamat KTP</dt>
-                <dd>{tenant.hometownAddress ?? '—'}</dd>
+                <dd className="mt-0.5 font-medium text-zinc-900">
+                  {tenant.hometownAddress ?? '-'}
+                </dd>
               </div>
             </dl>
           </div>
 
-          <h2 className="mt-8 text-sm font-semibold uppercase tracking-wide text-zinc-500">
-            Dokumen
-          </h2>
-          <ul className="mt-2 divide-y divide-zinc-100 overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-sm">
+          <h2 className="mt-8 text-sm font-semibold text-zinc-900">Dokumen</h2>
+          <ul className="tk-list mt-2">
             {docs.length === 0 ? (
-              <li className="p-4 text-sm text-zinc-500">Belum ada dokumen.</li>
+              <li className="p-6 text-center text-sm text-zinc-500">
+                Belum ada dokumen. Unggah di form bawah.
+              </li>
             ) : (
               docs.map((d) => {
                 const ocr = d.ocrJson ?? {};
                 return (
-                  <li key={d.id} className="px-4 py-4 text-sm">
+                  <li key={d.id} className="px-4 py-4 text-sm sm:px-5">
                     <div className="flex flex-wrap items-center gap-2">
                       <a
                         href={d.fileUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="font-medium underline decoration-zinc-300 underline-offset-2"
+                        className="font-semibold text-emerald-800 underline-offset-2 hover:underline"
                       >
                         {d.kind}
                       </a>
-                      <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] uppercase tracking-wide text-zinc-600">
-                        {d.status}
-                      </span>
-                      {d.consentAt && (
-                        <span className="text-[10px] text-emerald-700">
-                          consent ✓
+                      <StatusBadge status={d.status} kind="invoice" />
+                      {d.consentAt ? (
+                        <span className="text-[10px] font-medium text-emerald-800">
+                          Consent OK
                         </span>
-                      )}
+                      ) : null}
                     </div>
                     {d.ocrJson != null && (
                       <div className="mt-3 space-y-2 rounded-xl bg-zinc-50 p-3">
@@ -182,7 +204,9 @@ export default async function TenantDetailPage({
                             return (
                               <div key={f.key}>
                                 <dt className="text-zinc-500">{f.label}</dt>
-                                <dd className="font-medium">{String(v)}</dd>
+                                <dd className="font-medium text-zinc-900">
+                                  {String(v)}
+                                </dd>
                               </div>
                             );
                           })}
@@ -204,7 +228,7 @@ export default async function TenantDetailPage({
                               {OCR_FIELDS.map((f) => (
                                 <label
                                   key={f.key}
-                                  className="flex items-center gap-1 rounded-lg border bg-white px-2 py-1 text-[10px]"
+                                  className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-white px-2 py-1 text-[10px]"
                                 >
                                   <input
                                     type="checkbox"
@@ -215,11 +239,8 @@ export default async function TenantDetailPage({
                                 </label>
                               ))}
                             </div>
-                            <button
-                              type="submit"
-                              className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-800"
-                            >
-                              Apply terpilih → profil
+                            <button type="submit" className="tk-btn-sm">
+                              Apply terpilih ke profil
                             </button>
                           </form>
                         )}
@@ -237,38 +258,33 @@ export default async function TenantDetailPage({
             )}
           </ul>
 
-          <form
-            action={addDoc}
-            className="mt-6 space-y-3 rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm"
-          >
-            <h3 className="font-medium">Upload dokumen + OCR KTP</h3>
+          <form action={addDoc} className="tk-card mt-6 space-y-3 p-6">
+            <h3 className="text-base font-semibold text-zinc-900">
+              Upload dokumen + OCR KTP
+            </h3>
             <input type="hidden" name="tenantId" value={id} />
             <input type="hidden" name="workspaceId" value={workspaceId} />
-            <select
-              name="kind"
-              className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm"
-            >
-              <option value="ktp">KTP</option>
-              <option value="kk">KK</option>
-              <option value="other">Lainnya</option>
-            </select>
+            <label className="tk-field">
+              <span className="tk-label">Jenis</span>
+              <select name="kind" className="tk-select">
+                <option value="ktp">KTP</option>
+                <option value="kk">KK</option>
+                <option value="other">Lainnya</option>
+              </select>
+            </label>
             <DocUpload workspaceId={workspaceId} />
-            <label className="flex items-center gap-2 text-xs">
+            <label className="flex items-center gap-2 text-xs text-zinc-700">
               <input type="checkbox" name="runOcr" defaultChecked /> Jalankan
               OCR
             </label>
-            <label className="flex items-start gap-2 rounded-xl border border-amber-100 bg-amber-50/80 p-3 text-xs text-amber-950">
+            <label className="tk-alert flex items-start gap-2 text-xs" data-variant="warning">
               <input type="checkbox" name="consent" className="mt-0.5" />
               <span>
                 Consent: penyewa/operator setuju pemrosesan data KTP untuk
-                administrasi kos. Wajib dicentang jika OCR diaktifkan (API
-                menolak tanpa ini).
+                administrasi kos. Wajib dicentang jika OCR diaktifkan.
               </span>
             </label>
-            <button
-              type="submit"
-              className="rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-800"
-            >
+            <button type="submit" className="tk-btn">
               Simpan
             </button>
           </form>

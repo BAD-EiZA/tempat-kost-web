@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { EmptyState, PageHeader } from '@/components/ui';
 
 type Role = {
   id: string;
@@ -169,28 +170,46 @@ function RolesInner() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold">Custom roles</h1>
-      <p className="mt-1 text-sm text-zinc-600">
-        Workspace: {workspaceId || '—'} · edit permission role existing
-      </p>
-      {!workspaceId && (
-        <p className="mt-4 text-sm text-amber-700">
-          Buka dari{' '}
-          <Link href="/dashboard/team" className="underline">
+      <PageHeader
+        title="Custom roles"
+        description={
+          workspaceId
+            ? 'Edit permission role untuk workspace ini.'
+            : 'Pilih workspace dulu dari menu Tim.'
+        }
+        actions={
+          <Link
+            href={`/dashboard/team${workspaceId ? `?workspaceId=${workspaceId}` : ''}`}
+            className="text-sm font-medium text-emerald-800 underline-offset-2 hover:underline"
+          >
             Tim
           </Link>
-          .
-        </p>
+        }
+      />
+      {!workspaceId && (
+        <EmptyState
+          className="mt-6"
+          title="Workspace belum dipilih"
+          body="Buka dari halaman Tim agar role terikat workspace."
+        />
       )}
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
-      {msg && <p className="mt-3 text-sm text-emerald-700">{msg}</p>}
+      {error && (
+        <div className="tk-alert mt-3" data-variant="error">
+          {error}
+        </div>
+      )}
+      {msg && (
+        <div className="tk-alert mt-3" data-variant="success">
+          {msg}
+        </div>
+      )}
 
       <ul className="mt-6 space-y-3">
         {roles.map((r) => (
-          <li key={r.id} className="rounded-xl border bg-white p-4 text-sm">
+          <li key={r.id} className="tk-card p-4 text-sm">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <span className="font-medium">{r.name}</span>
+                <span className="font-semibold text-zinc-900">{r.name}</span>
                 <span className="text-xs text-zinc-500">
                   {' '}
                   ({r.key}) {r.isSystem ? 'system' : 'custom'} ·{' '}
@@ -201,7 +220,7 @@ function RolesInner() {
                 <button
                   type="button"
                   onClick={() => startEdit(r)}
-                  className="rounded border px-2 py-1 text-xs"
+                  className="tk-btn-secondary !px-2 !py-1 !text-xs"
                 >
                   Edit permissions
                 </button>
@@ -220,14 +239,14 @@ function RolesInner() {
                   <button
                     type="button"
                     onClick={() => void saveEdit()}
-                    className="rounded bg-zinc-900 px-3 py-1 text-xs text-white"
+                    className="tk-btn-sm"
                   >
                     Simpan
                   </button>
                   <button
                     type="button"
                     onClick={() => setEditId(null)}
-                    className="rounded border px-3 py-1 text-xs"
+                    className="tk-btn-secondary !px-3 !py-1 !text-xs"
                   >
                     Batal
                   </button>
@@ -239,20 +258,20 @@ function RolesInner() {
       </ul>
 
       {catalog && workspaceId && (
-        <div className="mt-8 rounded-xl border bg-white p-6">
+        <div className="tk-card mt-8 p-6">
           <h2 className="font-medium">Buat role baru</h2>
           <div className="mt-3 flex gap-2">
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Nama"
-              className="rounded border px-3 py-2 text-sm"
+              className="tk-input text-sm"
             />
             <input
               value={key}
               onChange={(e) => setKey(e.target.value)}
               placeholder="key"
-              className="rounded border px-3 py-2 text-sm"
+              className="tk-input text-sm"
             />
           </div>
           <Matrix
@@ -263,7 +282,7 @@ function RolesInner() {
           <button
             type="button"
             onClick={() => void createRole()}
-            className="mt-4 rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white"
+            className="tk-btn mt-4"
           >
             Simpan role
           </button>

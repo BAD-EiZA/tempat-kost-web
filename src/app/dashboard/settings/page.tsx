@@ -1,7 +1,7 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/auth';
 import { apiFetch, listWorkspaces } from '@/lib/api';
+import { PageHeader, WorkspaceChips } from '@/components/ui';
 
 async function saveAction(formData: FormData) {
   'use server';
@@ -55,30 +55,25 @@ export default async function SettingsPage({
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">Pengaturan workspace</h1>
-      <p className="mt-1 text-sm text-zinc-600">Identitas penagihan dan rekening pembayaran.</p>
+      <PageHeader
+        title="Pengaturan workspace"
+        description="Identitas penagihan dan rekening pembayaran."
+      />
       {workspaces.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {workspaces.map((w) => (
-            <Link
-              key={w.id}
-              href={`/dashboard/settings?workspaceId=${w.id}`}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
-                w.id === workspaceId ? 'bg-zinc-900 text-white' : 'bg-zinc-100'
-              }`}
-            >
-              {w.name}
-            </Link>
-          ))}
-        </div>
+        <WorkspaceChips
+          workspaces={workspaces}
+          workspaceId={workspaceId}
+          hrefFor={(id) => `/dashboard/settings?workspaceId=${id}`}
+          className="mt-4"
+        />
       )}
       {error && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
+        <div className="tk-alert mt-4" data-variant="warning">
           {error}
         </div>
       )}
       {ws && workspaceId && (
-        <form action={saveAction} className="mt-8 max-w-xl space-y-4 rounded-xl border bg-white p-4 sm:p-6">
+        <form action={saveAction} className="mt-8 max-w-xl space-y-4 tk-card p-4 sm:p-6">
           <input type="hidden" name="workspaceId" value={workspaceId} />
           {(
             [
@@ -100,13 +95,13 @@ export default async function SettingsPage({
                  min={name === 'defaultDueDay' ? 1 : undefined}
                  max={name === 'defaultDueDay' ? 31 : undefined}
                  required={name === 'name' || name === 'timezone'}
-                 className="rounded-lg border border-zinc-300 px-3 py-2"
+                 className="tk-input"
               />
             </label>
           ))}
           <button
             type="submit"
-            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white"
+            className="tk-btn"
           >
             Simpan pengaturan
           </button>

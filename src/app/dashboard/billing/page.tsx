@@ -1,6 +1,14 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Alert, ConfirmSubmitButton, PendingSubmitButton } from '@/components/ui';
+import {
+  Alert,
+  ConfirmSubmitButton,
+  EmptyState,
+  PageHeader,
+  PendingSubmitButton,
+  StatusBadge,
+  WorkspaceChips,
+} from '@/components/ui';
 import { requireAuth } from '@/lib/auth';
 import {
   apiFetch,
@@ -12,17 +20,8 @@ import {
   listWorkspaces,
   voidInvoice,
 } from '@/lib/api';
+import { formatDateId, formatIdr } from '@/lib/format';
 import { ProofUploadField } from './proof-upload';
-
-function formatIdr(n: string | number) {
-  const v = typeof n === 'string' ? Number(n) : n;
-  if (Number.isNaN(v)) return String(n);
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(v);
-}
 
 async function fromLeaseAction(formData: FormData) {
   'use server';
@@ -139,68 +138,61 @@ export default async function BillingPage({
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Tagihan</h1>
-          <p className="mt-1 text-sm text-zinc-600">
-            Draft → issue → catat bayar manual → konfirmasi di Pembayaran.
-          </p>
-        </div>
-        <Link
-          href={`/dashboard/payments?workspaceId=${workspaceId}`}
-          className="text-sm underline"
-        >
-          Pembayaran →
-        </Link>
-      </div>
+      <PageHeader
+        title="Tagihan"
+        description="Draft, issue, catat bayar manual, lalu konfirmasi di Pembayaran."
+        actions={
+          <Link
+            href={`/dashboard/payments?workspaceId=${workspaceId}`}
+            className="text-sm font-medium text-emerald-800 underline-offset-2 hover:underline"
+          >
+            Pembayaran
+          </Link>
+        }
+      />
 
       {workspaces.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {workspaces.map((ws) => (
-            <Link
-              key={ws.id}
-              href={`/dashboard/billing?workspaceId=${ws.id}`}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
-                ws.id === workspaceId
-                  ? 'bg-zinc-900 text-white'
-                  : 'bg-zinc-100 text-zinc-700'
-              }`}
-            >
-              {ws.name}
-            </Link>
-          ))}
-        </div>
+        <WorkspaceChips
+          workspaces={workspaces}
+          workspaceId={workspaceId}
+          hrefFor={(id) => `/dashboard/billing?workspaceId=${id}`}
+        />
       )}
 
       {error && (
         <Alert variant="error" className="mt-4">{error}</Alert>
       )}
 
-      <ul className="mt-6 divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white">
-        {invoices.length === 0 ? (
-          <li className="p-6 text-sm text-zinc-600">Belum ada tagihan.</li>
-        ) : (
-          invoices.map((inv) => {
+      {invoices.length === 0 ? (
+        <EmptyState
+          className="mt-6"
+          title="Belum ada tagihan"
+          body="Buat tagihan dari kontrak aktif lewat form di bawah."
+        />
+      ) : (
+      <ul className="tk-list mt-6">
+          {invoices.map((inv) => {
             const outstanding =
               Number(inv.total) - Number(inv.amountPaid || 0);
             return (
               <li key={inv.id} className="px-6 py-4 text-sm">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className="font-medium">
-                      {inv.invoiceNumber}{' '}
-                      <span className="text-xs font-normal text-zinc-500">
-                        {inv.status} · {inv.type}
-                      </span>
-                    </p>
-                    <p className="text-xs text-zinc-500">
-                      {inv.tenant?.fullName ?? '—'} · {formatIdr(inv.total)}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-medium">{inv.invoiceNumber}</p>
+                      <StatusBadge status={inv.status} kind="invoice" />
+                      {inv.type ? (
+                        <span className="text-xs text-zinc-400">{inv.type}</span>
+                      ) : null}
+                    </div>
+                    <p className="mt-1 text-xs text-zinc-500">
+                      {inv.tenant?.fullName ?? '-'} · {formatIdr(inv.total)}
                       {outstanding > 0
                         ? ` · sisa ${formatIdr(outstanding)}`
                         : ''}
                     </p>
                     <p className="text-xs text-zinc-400">
-                      jatuh tempo {String(inv.dueDate).slice(0, 10)}
+                      Jatuh tempo {formatDateId(inv.dueDate)}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -213,7 +205,7 @@ export default async function BillingPage({
                           value={workspaceId}
                         />
                         <PendingSubmitButton
-                          className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white"
+                          className="tk-btn-sm"
                           pendingLabel="Issuing..."
                         >
                           Issue
@@ -244,11 +236,11 @@ export default async function BillingPage({
                             <input
                               name="manualReference"
                               placeholder="Ref transfer"
-                              className="w-full rounded border border-zinc-300 px-2 py-1 text-xs"
+                              className="tk-input w-full !px-2 !py-1 !text-xs"
                             />
                             <ProofUploadField workspaceId={workspaceId} />
                             <PendingSubmitButton
-                              className="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white"
+                              className="tk-btn-sm"
                               pendingLabel="Mencatat..."
                             >
                               Catat + OCR
@@ -304,17 +296,17 @@ export default async function BillingPage({
                     <input
                       name="description"
                       placeholder="Adjustment"
-                      className="rounded border px-2 py-1 text-xs"
+                      className="tk-input !px-2 !py-1 !text-xs"
                     />
                     <input
                       name="amount"
                       type="number"
                       placeholder="±Rp"
-                      className="w-24 rounded border px-2 py-1 text-xs"
+                      className="tk-input w-24 !px-2 !py-1 !text-xs"
                     />
                     <button
                       type="submit"
-                      className="rounded border px-2 py-1 text-xs"
+                      className="tk-input !px-2 !py-1 !text-xs"
                     >
                       Adjust
                     </button>
@@ -322,14 +314,14 @@ export default async function BillingPage({
                 )}
               </li>
             );
-          })
-        )}
+          })}
       </ul>
+      )}
 
       {workspaceId && activeLeases.length > 0 && (
         <form
           action={fromLeaseAction}
-          className="mt-8 rounded-xl border border-zinc-200 bg-white p-6"
+          className="tk-card mt-8 p-6"
         >
           <h2 className="font-medium">Buat tagihan sewa dari kontrak aktif</h2>
           <input type="hidden" name="workspaceId" value={workspaceId} />
@@ -338,7 +330,7 @@ export default async function BillingPage({
             <select
               name="leaseId"
               required
-              className="rounded-lg border border-zinc-300 px-3 py-2"
+              className="tk-input"
             >
               {activeLeases.map((l) => (
                 <option key={l.id} value={l.id}>
@@ -350,7 +342,7 @@ export default async function BillingPage({
           </label>
           <button
             type="submit"
-            className="mt-4 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white"
+            className="tk-btn mt-4"
           >
             Buat draft tagihan
           </button>

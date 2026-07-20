@@ -1,6 +1,9 @@
 import { requireAuth } from '@/lib/auth';
 import { apiFetch } from '@/lib/api';
 import { resolvePortalTenantId } from '@/lib/portal-tenant';
+import { formatDateId } from '@/lib/format';
+import { EmptyState } from '@/components/ui';
+import { PortalPageHeader } from '@/components/portal/page-header';
 
 export default async function PortalAnnouncementsPage({
   searchParams,
@@ -29,32 +32,36 @@ export default async function PortalAnnouncementsPage({
   }
 
   return (
-    <>
-      <h1 className="text-xl font-semibold">Pengumuman</h1>
-      {error && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
+    <div className="space-y-4">
+      <PortalPageHeader
+        title="Pengumuman"
+        description="Info dari pengelola kos."
+      />
+      {error ? (
+        <div className="tk-alert" data-variant="warning">
           {error}
         </div>
-      )}
-      <ul className="mt-4 space-y-3">
-        {items.length === 0 ? (
-          <li className="rounded-xl border bg-white p-4 text-sm text-zinc-500">
-            Tidak ada pengumuman.
-          </li>
-        ) : (
-          items.map((a) => (
-            <li key={a.id} className="rounded-xl border bg-white p-4 text-sm">
-              <p className="font-medium">{a.title}</p>
-              <p className="mt-1 whitespace-pre-wrap text-zinc-600">{a.body}</p>
-              <p className="mt-2 text-[10px] text-zinc-400">
-                {a.publishedAt
-                  ? String(a.publishedAt).slice(0, 16).replace('T', ' ')
-                  : ''}
+      ) : null}
+
+      {items.length === 0 ? (
+        <EmptyState title="Tidak ada pengumuman" />
+      ) : (
+        <ul className="space-y-3">
+          {items.map((a) => (
+            <li key={a.id} className="tk-card p-4">
+              <p className="text-sm font-semibold text-zinc-900">{a.title}</p>
+              <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-zinc-600">
+                {a.body}
               </p>
+              {a.publishedAt ? (
+                <p className="mt-3 text-xs text-zinc-400">
+                  {formatDateId(a.publishedAt)}
+                </p>
+              ) : null}
             </li>
-          ))
-        )}
-      </ul>
-    </>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }

@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/auth';
 import { apiFetch } from '@/lib/api';
 import { resolvePortalTenantId, withTenant } from '@/lib/portal-tenant';
+import { EmptyState } from '@/components/ui';
+import { PortalPageHeader } from '@/components/portal/page-header';
 
 async function submitAction(formData: FormData) {
   'use server';
@@ -15,13 +17,13 @@ async function submitAction(formData: FormData) {
     method: 'POST',
     body: JSON.stringify({ tenantId, title, description, urgency }),
   });
-  redirect(withTenant('/portal', tenantId));
+  redirect(withTenant('/portal/maintenance?sent=1', tenantId));
 }
 
 export default async function PortalMaintenancePage({
   searchParams,
 }: {
-  searchParams: Promise<{ tenantId?: string }>;
+  searchParams: Promise<{ tenantId?: string; sent?: string }>;
 }) {
   await requireAuth();
   const sp = await searchParams;
@@ -35,47 +37,59 @@ export default async function PortalMaintenancePage({
 
   if (!tenantId) {
     return (
-      <p className="text-sm text-zinc-600">Profil penyewa belum terhubung.</p>
+      <EmptyState
+        title="Profil penyewa belum terhubung"
+        body="Hubungi pengelola kos untuk menghubungkan akun Anda."
+      />
     );
   }
 
   return (
-    <>
-      <h1 className="text-xl font-semibold">Lapor kerusakan</h1>
-      <form action={submitAction} className="mt-4 space-y-3">
+    <div className="space-y-4">
+      <PortalPageHeader
+        title="Lapor kerusakan"
+        description="Laporkan masalah di kamar atau area bersama. Tim akan menindaklanjuti."
+      />
+      {sp.sent ? (
+        <div className="tk-alert" data-variant="success">
+          Laporan terkirim. Anda bisa mengirim laporan lain di bawah.
+        </div>
+      ) : null}
+
+      <form action={submitAction} className="tk-card space-y-3 p-5">
         <input type="hidden" name="tenantId" value={tenantId} />
-        <label className="flex flex-col gap-1 text-sm">
-          <span>Judul</span>
+        <label className="tk-field">
+          <span className="tk-label">Judul</span>
           <input
             name="title"
             required
-            className="rounded-lg border border-zinc-300 px-3 py-2"
+            maxLength={120}
+            placeholder="Contoh: AC tidak dingin"
+            className="tk-input"
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span>Urgensi</span>
-          <select name="urgency" className="rounded-lg border px-3 py-2">
+        <label className="tk-field">
+          <span className="tk-label">Urgensi</span>
+          <select name="urgency" className="tk-select" defaultValue="medium">
             <option value="low">Rendah</option>
             <option value="medium">Sedang</option>
             <option value="high">Tinggi</option>
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span>Deskripsi</span>
+        <label className="tk-field">
+          <span className="tk-label">Deskripsi</span>
           <textarea
             name="description"
             required
             rows={4}
-            className="rounded-lg border border-zinc-300 px-3 py-2"
+            placeholder="Jelaskan kerusakan dan lokasi"
+            className="tk-input resize-y"
           />
         </label>
-        <button
-          type="submit"
-          className="w-full rounded-lg bg-zinc-900 py-2.5 text-sm font-medium text-white"
-        >
-          Kirim
+        <button type="submit" className="tk-btn w-full !py-2.5">
+          Kirim laporan
         </button>
       </form>
-    </>
+    </div>
   );
 }

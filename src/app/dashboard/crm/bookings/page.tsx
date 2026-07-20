@@ -2,6 +2,13 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/auth';
 import { apiFetch, listProperties, listRooms, listWorkspaces } from '@/lib/api';
+import {
+  EmptyState,
+  PageHeader,
+  StatusBadge,
+  WorkspaceChips,
+} from '@/components/ui';
+import { formatDateId, formatIdr } from '@/lib/format';
 
 async function createBooking(formData: FormData) {
   'use server';
@@ -87,99 +94,134 @@ export default async function BookingsPage({
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Booking / hold</h1>
-        <Link
-          href={`/dashboard/crm?workspaceId=${workspaceId}`}
-          className="text-sm underline"
-        >
-          ← Prospect
-        </Link>
-      </div>
+      <PageHeader
+        title="Booking / hold"
+        description="Tahan kamar untuk prospect dengan fee opsional."
+        actions={
+          <Link
+            href={`/dashboard/crm?workspaceId=${workspaceId}`}
+            className="text-sm font-medium text-emerald-800 underline-offset-2 hover:underline"
+          >
+            Prospect CRM
+          </Link>
+        }
+      />
+      {workspaces.length > 0 && (
+        <WorkspaceChips
+          workspaces={workspaces}
+          workspaceId={workspaceId}
+          hrefFor={(id) => `/dashboard/crm/bookings?workspaceId=${id}`}
+        />
+      )}
       {error && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
+        <div className="tk-alert mt-4" data-variant="warning">
           {error}
         </div>
       )}
-      <ul className="mt-6 divide-y rounded-xl border bg-white">
-        {bookings.map((b) => (
-          <li
-            key={b.id}
-            className="flex flex-wrap items-center justify-between gap-2 px-6 py-3 text-sm"
-          >
-            <div>
-              <p className="font-medium">
-                {b.property?.name} · {b.prospect?.fullName ?? '—'}
-              </p>
-              <p className="text-xs text-zinc-500">
-                {b.status} · fee Rp {Number(b.feeAmount).toLocaleString('id-ID')} ·
-                hold until {String(b.holdUntil).slice(0, 10)}
-                {b.feeInvoiceId ? ` · inv ${b.feeInvoiceId.slice(0, 8)}…` : ''}
-              </p>
-            </div>
-            <div className="flex gap-1">
-              {!b.feeInvoiceId && Number(b.feeAmount) > 0 && (
-                <form action={feeInvoice}>
-                  <input type="hidden" name="id" value={b.id} />
-                  <input type="hidden" name="workspaceId" value={workspaceId} />
-                  <button
-                    type="submit"
-                    className="rounded bg-zinc-900 px-2 py-1 text-xs text-white"
-                  >
-                    Buat invoice fee
-                  </button>
-                </form>
-              )}
-              {b.status !== 'PAID' && b.status !== 'CONVERTED' && (
-                <form action={markPaid}>
-                  <input type="hidden" name="id" value={b.id} />
-                  <input type="hidden" name="workspaceId" value={workspaceId} />
-                  <button type="submit" className="rounded border px-2 py-1 text-xs">
-                    Mark paid
-                  </button>
-                </form>
-              )}
-            </div>
-          </li>
-        ))}
-      </ul>
+
+      {bookings.length === 0 ? (
+        <EmptyState
+          className="mt-6"
+          title="Belum ada hold"
+          body="Buat hold dari form di bawah setelah ada properti dan prospect."
+        />
+      ) : (
+        <ul className="mt-6 space-y-2">
+          {bookings.map((b) => (
+            <li
+              key={b.id}
+              className="tk-card flex flex-wrap items-center justify-between gap-3 px-5 py-4 text-sm"
+            >
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-semibold text-zinc-900">
+                    {b.property?.name ?? 'Properti'}
+                  </p>
+                  <StatusBadge status={b.status} kind="booking" />
+                </div>
+                <p className="mt-1 text-xs text-zinc-500">
+                  {b.prospect?.fullName ?? 'Tanpa prospect'} · fee{' '}
+                  {formatIdr(Number(b.feeAmount))} · hold sampai{' '}
+                  {formatDateId(b.holdUntil)}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {!b.feeInvoiceId && Number(b.feeAmount) > 0 && (
+                  <form action={feeInvoice}>
+                    <input type="hidden" name="id" value={b.id} />
+                    <input type="hidden" name="workspaceId" value={workspaceId} />
+                    <button type="submit" className="tk-btn-sm">
+                      Buat invoice fee
+                    </button>
+                  </form>
+                )}
+                {b.status !== 'PAID' && b.status !== 'CONVERTED' && (
+                  <form action={markPaid}>
+                    <input type="hidden" name="id" value={b.id} />
+                    <input type="hidden" name="workspaceId" value={workspaceId} />
+                    <button
+                      type="submit"
+                      className="tk-btn-secondary !px-2.5 !py-1 !text-xs"
+                    >
+                      Mark paid
+                    </button>
+                  </form>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
       {workspaceId && properties.length > 0 && (
         <form
           action={createBooking}
-          className="mt-8 max-w-lg space-y-2 rounded-xl border bg-white p-6"
+          className="tk-card mt-8 max-w-lg space-y-3 p-6"
         >
-          <h2 className="font-medium">Buat hold</h2>
+          <h2 className="text-base font-semibold text-zinc-900">Buat hold</h2>
           <input type="hidden" name="workspaceId" value={workspaceId} />
-          <select name="propertyId" required className="w-full rounded border px-3 py-2 text-sm">
-            {properties.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-          <select name="roomId" className="w-full rounded border px-3 py-2 text-sm">
-            <option value="">— Kamar —</option>
-            {rooms.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
-              </option>
-            ))}
-          </select>
-          <select name="prospectId" className="w-full rounded border px-3 py-2 text-sm">
-            <option value="">— Prospect —</option>
-            {prospects.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.fullName}
-              </option>
-            ))}
-          </select>
-          <input
-            name="feeAmount"
-            type="number"
-            placeholder="Booking fee"
-            className="w-full rounded border px-3 py-2 text-sm"
-          />
-          <button type="submit" className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white">
+          <label className="tk-field">
+            <span className="tk-label">Properti</span>
+            <select name="propertyId" required className="tk-select">
+              {properties.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="tk-field">
+            <span className="tk-label">Kamar (opsional)</span>
+            <select name="roomId" className="tk-select">
+              <option value="">Tanpa kamar</option>
+              {rooms.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="tk-field">
+            <span className="tk-label">Prospect (opsional)</span>
+            <select name="prospectId" className="tk-select">
+              <option value="">Tanpa prospect</option>
+              {prospects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.fullName}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="tk-field">
+            <span className="tk-label">Booking fee (Rp)</span>
+            <input
+              name="feeAmount"
+              type="number"
+              min={0}
+              className="tk-input"
+            />
+          </label>
+          <button type="submit" className="tk-btn">
             Simpan hold
           </button>
         </form>

@@ -1,12 +1,16 @@
+import Link from 'next/link';
 import { requireAuth } from '@/lib/auth';
 import { apiFetch } from '@/lib/api';
 import {
   resolvePortalTenantId,
   withTenant,
 } from '@/lib/portal-tenant';
+import { formatDateId, formatIdr } from '@/lib/format';
+import { EmptyState } from '@/components/ui';
+import { PortalPageHeader } from '@/components/portal/page-header';
+import { StatusBadge } from '@/components/portal/status-badge';
 import { PortalPayClient } from './pay-client';
 import { PortalProofUpload } from './proof-upload';
-import Link from 'next/link';
 
 type Invoice = {
   id: string;
@@ -17,14 +21,6 @@ type Invoice = {
   amountPaid: string | number;
   dueDate: string;
 };
-
-function formatIdr(n: number) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(n);
-}
 
 export default async function PortalBillsPage({
   searchParams,
@@ -53,45 +49,73 @@ export default async function PortalBillsPage({
   }
 
   return (
-    <>
-      <h1 className="text-xl font-semibold">Tagihan</h1>
-      <p className="mt-1 text-xs text-zinc-500">
-        Bayar online (Snap) atau unggah bukti transfer.
-      </p>
-      {error && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
+    <div className="space-y-4">
+      <PortalPageHeader
+        title="Tagihan"
+        description="Bayar online atau unggah bukti transfer."
+      />
+      {error ? (
+        <div className="tk-alert" data-variant="warning">
           {error}
         </div>
-      )}
-      <ul className="mt-4 divide-y divide-zinc-100 rounded-xl border border-zinc-200 bg-white">
-        {invoices.length === 0 ? (
-          <li className="p-4 text-sm text-zinc-500">Belum ada tagihan.</li>
-        ) : (
-          invoices.map((inv) => {
+      ) : null}
+
+      {invoices.length === 0 ? (
+        <EmptyState
+          title="Belum ada tagihan"
+          body="Tagihan baru akan muncul di sini."
+          action={
+            tenantId ? (
+              <Link
+                href={withTenant('/portal', tenantId)}
+                className="tk-btn-secondary !text-sm"
+              >
+                Kembali ke home
+              </Link>
+            ) : null
+          }
+        />
+      ) : (
+        <ul className="space-y-3">
+          {invoices.map((inv) => {
             const outstanding =
               Number(inv.total) - Number(inv.amountPaid || 0);
             const payable =
               outstanding > 0 &&
               ['OPEN', 'PARTIALLY_PAID', 'OVERDUE'].includes(inv.status);
             return (
-              <li key={inv.id} className="px-4 py-3 text-sm">
+              <li key={inv.id} className="tk-card p-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-zinc-900">
+                      {inv.invoiceNumber}
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-500">
+                      Total {formatIdr(Number(inv.total))}
+                    </p>
+                  </div>
+                  <StatusBadge status={inv.status} kind="invoice" />
+                </div>
+                <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
                   <div>
-                    <p className="font-medium">{inv.invoiceNumber}</p>
-                    <p className="text-xs text-zinc-500">
-                      {inv.status} · {formatIdr(Number(inv.total))}
-                      {outstanding > 0
-                        ? ` · sisa ${formatIdr(outstanding)}`
-                        : ''}{' '}
-                      · due {String(inv.dueDate).slice(0, 10)}
+                    <p className="text-xs text-zinc-500">Sisa bayar</p>
+                    <p className="text-lg font-semibold tabular-nums text-zinc-900">
+                      {formatIdr(Math.max(0, outstanding))}
+                    </p>
+                    <p className="mt-0.5 text-xs text-zinc-500">
+                      Jatuh tempo {formatDateId(inv.dueDate)}
                     </p>
                   </div>
                   {payable && tenantId ? (
-                    <PortalPayClient tenantId={tenantId} invoiceId={inv.id} />
+                    <PortalPayClient
+                      tenantId={tenantId}
+                      invoiceId={inv.id}
+                      className="tk-btn !px-3 !py-2 !text-xs"
+                    />
                   ) : null}
                 </div>
                 {payable && tenantId && workspaceId ? (
-                  <div className="mt-2 border-t border-zinc-50 pt-2">
+                  <div className="mt-3 border-t border-zinc-100 pt-3">
                     <PortalProofUpload
                       tenantId={tenantId}
                       workspaceId={workspaceId}
@@ -102,17 +126,20 @@ export default async function PortalBillsPage({
                 ) : null}
               </li>
             );
-          })
-        )}
-      </ul>
-      <p className="mt-4 text-xs">
-        <Link
-          href={withTenant('/portal/payments', tenantId)}
-          className="underline"
-        >
-          Lihat status pembayaran →
-        </Link>
-      </p>
-    </>
+          })}
+        </ul>
+      )}
+
+      {tenantId ? (
+        <p className="text-center text-xs">
+          <Link
+            href={withTenant('/portal/payments', tenantId)}
+            className="font-medium text-emerald-800 underline-offset-2 hover:underline"
+          >
+            Riwayat pembayaran online
+          </Link>
+        </p>
+      ) : null}
+    </div>
   );
 }

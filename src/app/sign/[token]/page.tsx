@@ -39,7 +39,7 @@ export default function SignContractPage() {
     if (!c) return;
     const ctx = c.getContext('2d');
     if (!ctx) return;
-    ctx.strokeStyle = '#111';
+    ctx.strokeStyle = '#18181b';
     ctx.lineWidth = 2;
     const pos = (e: PointerEvent) => {
       const r = c.getBoundingClientRect();
@@ -97,78 +97,117 @@ export default function SignContractPage() {
   }
 
   if (error && !doc) {
-    return <p className="p-8 text-center text-sm text-red-600">{error}</p>;
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-zinc-50 px-6">
+        <div className="tk-card max-w-md p-8 text-center">
+          <p className="text-sm text-red-700" role="alert">
+            {error}
+          </p>
+        </div>
+      </div>
+    );
   }
   if (!doc) {
-    return <p className="p-8 text-center text-sm">Memuat kontrak…</p>;
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-zinc-50 px-6">
+        <p className="text-sm text-zinc-500">Memuat kontrak…</p>
+      </div>
+    );
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="text-xl font-semibold">Tanda tangan kontrak</h1>
-      <p className="text-sm text-zinc-600">{doc.leaseNumber}</p>
-      <div
-        className="tk-contract mt-6 max-w-none rounded-xl border bg-white p-4 text-sm"
-        dangerouslySetInnerHTML={{ __html: doc.bodyHtml }}
-      />
-      {done ? (
-        <p className="mt-6 rounded-lg bg-emerald-50 p-4 text-sm text-emerald-800">
-          Kontrak sudah ditandatangani. Terima kasih.
-        </p>
-      ) : (
-        <div className="mt-6 space-y-3 rounded-xl border bg-white p-4">
-          <label className="block text-sm">
-            Nama penandatangan
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="mt-1 w-full rounded border px-3 py-2"
-            />
-          </label>
-          <fieldset className="space-y-2">
-            <legend className="text-sm font-medium">Metode tanda tangan</legend>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={typedSignature}
-                onChange={(event) => setTypedSignature(event.target.checked)}
-              />
-              Gunakan nama di atas sebagai tanda tangan elektronik
-            </label>
-          </fieldset>
-          <p id="signature-help" className="text-xs text-zinc-500">
-            Gambar tanda tangan di kotak, atau pilih tanda tangan elektronik berbasis nama.
+    <div className="min-h-[100dvh] bg-zinc-50">
+      <header className="border-b border-zinc-200 bg-white">
+        <div className="mx-auto max-w-2xl px-4 py-6">
+          <p className="text-xs font-medium tracking-wide text-emerald-800 uppercase">
+            E-sign
           </p>
-          <canvas
-            ref={canvasRef}
-            width={500}
-            height={160}
-            role="img"
-            aria-label="Area tanda tangan"
-            aria-describedby="signature-help"
-            className="w-full touch-none rounded border bg-zinc-50"
-          />
-          <button
-            type="button"
-            onClick={() => {
-              const canvas = canvasRef.current;
-              canvas?.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
-              setHasSignature(false);
-            }}
-            className="rounded-lg border px-3 py-2 text-sm"
-          >
-            Hapus tanda tangan
-          </button>
-          {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
-          <button
-            type="button"
-            onClick={() => void submit()}
-            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white"
-          >
-            Tanda tangani
-          </button>
+          <h1 className="mt-1 text-xl font-semibold tracking-tight text-zinc-900">
+            Tanda tangan kontrak
+          </h1>
+          <p className="mt-1 text-sm text-zinc-500">{doc.leaseNumber}</p>
         </div>
-      )}
+      </header>
+
+      <div className="mx-auto max-w-2xl px-4 py-8">
+        <div
+          className="tk-contract tk-card max-w-none p-5 text-sm sm:p-6"
+          dangerouslySetInnerHTML={{ __html: doc.bodyHtml }}
+        />
+        {done ? (
+          <div className="tk-alert mt-6" data-variant="success">
+            Kontrak sudah ditandatangani. Terima kasih.
+          </div>
+        ) : (
+          <div className="tk-card mt-6 space-y-4 p-5">
+            <h2 className="text-base font-semibold text-zinc-900">
+              Formulir tanda tangan
+            </h2>
+            <label className="tk-field">
+              <span className="tk-label">Nama penandatangan</span>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="tk-input"
+                autoComplete="name"
+              />
+            </label>
+            <fieldset className="space-y-2">
+              <legend className="text-sm font-medium text-zinc-800">
+                Metode tanda tangan
+              </legend>
+              <label className="flex items-center gap-2 text-sm text-zinc-700">
+                <input
+                  type="checkbox"
+                  checked={typedSignature}
+                  onChange={(event) => setTypedSignature(event.target.checked)}
+                />
+                Gunakan nama di atas sebagai tanda tangan elektronik
+              </label>
+            </fieldset>
+            <p id="signature-help" className="text-xs text-zinc-500">
+              Gambar tanda tangan di kotak, atau pilih tanda tangan elektronik
+              berbasis nama.
+            </p>
+            <canvas
+              ref={canvasRef}
+              width={500}
+              height={160}
+              role="img"
+              aria-label="Area tanda tangan"
+              aria-describedby="signature-help"
+              className="w-full touch-none rounded-xl border border-zinc-200 bg-zinc-50"
+            />
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const canvas = canvasRef.current;
+                  canvas
+                    ?.getContext('2d')
+                    ?.clearRect(0, 0, canvas.width, canvas.height);
+                  setHasSignature(false);
+                }}
+                className="tk-btn-secondary"
+              >
+                Hapus tanda tangan
+              </button>
+              <button
+                type="button"
+                onClick={() => void submit()}
+                className="tk-btn"
+              >
+                Tanda tangani
+              </button>
+            </div>
+            {error ? (
+              <p role="alert" className="text-sm text-red-600">
+                {error}
+              </p>
+            ) : null}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

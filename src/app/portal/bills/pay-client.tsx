@@ -21,9 +21,11 @@ declare global {
 export function PortalPayClient({
   tenantId,
   invoiceId,
+  className = 'tk-btn-sm',
 }: {
   tenantId: string;
   invoiceId: string;
+  className?: string;
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,13 +82,17 @@ export function PortalPayClient({
     <div>
       <button
         type="button"
-        onClick={pay}
+        onClick={() => void pay()}
         disabled={loading}
-        className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+        className={className}
       >
-        {loading ? '…' : 'Bayar online'}
+        {loading ? 'Memproses…' : 'Bayar online'}
       </button>
-      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+      {error ? (
+        <p className="mt-1 text-xs text-red-600" role="alert">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

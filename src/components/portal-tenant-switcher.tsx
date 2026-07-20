@@ -35,12 +35,13 @@ export function PortalTenantSwitcher({
 
   return (
     <label className="flex items-center gap-1 text-xs text-zinc-600">
-      <span className="hidden sm:inline">Profil</span>
+      <span className="sr-only">Profil penyewa</span>
       <select
         value={currentId}
         disabled={pending}
         onChange={(e) => void onChange(e.target.value)}
-        className="max-w-[10rem] rounded border border-zinc-200 bg-white px-2 py-1 text-xs"
+        className="tk-input max-w-[9rem] !px-2 !py-1 !text-xs"
+        aria-label="Ganti profil penyewa"
       >
         {tenants.map((t) => (
           <option key={t.id} value={t.id}>

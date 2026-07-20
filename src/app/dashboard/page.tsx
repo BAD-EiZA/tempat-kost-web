@@ -6,7 +6,7 @@ import {
   listWorkspaces,
   type WorkspaceOverview,
 } from '@/lib/api';
-import { AceCard, CardSpotlight, GlowingEffect } from '@/components/ui';
+import { EmptyState, PageHeader, WorkspaceChips } from '@/components/ui';
 
 function formatIdr(n: number) {
   return new Intl.NumberFormat('id-ID', {
@@ -26,15 +26,15 @@ function Stat({
   hint?: string;
 }) {
   return (
-    <CardSpotlight className="p-4" radius={200} color="#6366f1">
+    <div className="tk-card p-4">
       <p className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
         {label}
       </p>
-      <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight">
+      <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-zinc-900">
         {value}
       </p>
       {hint ? <p className="mt-1 text-xs text-zinc-500">{hint}</p> : null}
-    </CardSpotlight>
+    </div>
   );
 }
 
@@ -68,53 +68,47 @@ export default async function DashboardPage({
 
   return (
     <>
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
-          <p className="mt-1 text-sm text-zinc-600">
+      <PageHeader
+        title="Overview"
+        description={
+          <>
             {me?.email ?? me?.externalUserId}
             {current ? ` · ${current.name}` : ''}
-          </p>
-        </div>
-        <Link
-          href="/onboarding"
-          className="rounded-xl bg-zinc-900 px-3 py-2 text-sm font-medium text-white shadow-lg shadow-zinc-900/10 transition hover:bg-zinc-800"
-        >
-          + Workspace
-        </Link>
-      </div>
+          </>
+        }
+        actions={
+          <Link href="/onboarding" className="tk-btn">
+            + Workspace
+          </Link>
+        }
+      />
 
       {workspaces.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {workspaces.map((ws) => (
-            <Link
-              key={ws.id}
-              href={`/dashboard?workspaceId=${ws.id}`}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                ws.id === workspaceId
-                  ? 'bg-zinc-900 text-white shadow-md'
-                  : 'border border-zinc-200/80 bg-white/80 text-zinc-700 hover:border-indigo-200'
-              }`}
-            >
-              {ws.name}
-            </Link>
-          ))}
-        </div>
+        <WorkspaceChips
+          workspaces={workspaces}
+          workspaceId={workspaceId}
+          hrefFor={(id) => `/dashboard?workspaceId=${id}`}
+          className="mt-4"
+        />
       )}
 
       {error && (
-        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <div className="tk-alert mt-4" data-variant="warning">
           {error}
         </div>
       )}
 
       {!workspaceId && !error && (
-        <p className="mt-6 text-sm text-zinc-600">
-          Belum ada workspace.{' '}
-          <Link href="/onboarding" className="underline">
-            Buat dulu
-          </Link>
-        </p>
+        <EmptyState
+          className="mt-6"
+          title="Belum ada workspace"
+          body="Buat workspace untuk mulai mengelola kos."
+          action={
+            <Link href="/onboarding" className="tk-btn !text-sm">
+              Buat workspace
+            </Link>
+          }
+        />
       )}
 
       {overview && (
@@ -142,49 +136,45 @@ export default async function DashboardPage({
           </div>
 
           <div className="mt-8 grid gap-4 md:grid-cols-2">
-            <GlowingEffect>
-              <AceCard
-                title="Modul"
-                description="Akses cepat operasional"
-                className="border-0 shadow-none"
-              >
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {[
-                    ['Properti', '/dashboard/properties'],
-                    ['Kamar', '/dashboard/rooms'],
-                    ['Penyewa', '/dashboard/tenants'],
-                    ['Kontrak', '/dashboard/leases'],
-                    ['Tagihan', '/dashboard/billing'],
-                    ['Pembayaran', '/dashboard/payments'],
-                    ['Pengeluaran', '/dashboard/expenses'],
-                    ['Listrik', '/dashboard/utilities'],
-                    ['Deposit', '/dashboard/deposits'],
-                    ['AI', '/dashboard/ai'],
-                    ['Insights', '/dashboard/insights'],
-                    ['Import', '/dashboard/import'],
-                  ].map(([label, href]) => (
-                    <Link
-                      key={href}
-                      href={`${href}?workspaceId=${workspaceId}`}
-                      className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-xs font-medium text-zinc-800 transition hover:border-indigo-300 hover:bg-indigo-50"
-                    >
-                      {label} →
-                    </Link>
-                  ))}
-                </div>
-              </AceCard>
-            </GlowingEffect>
-            <AceCard
-              title="Human-in-the-loop"
-              description="AI & design system"
-              className="bg-gradient-to-br from-white to-indigo-50/40"
-            >
-              <ul className="list-disc space-y-1.5 pl-4 text-sm text-zinc-600">
-                <li>OCR / triage / draft hanya saran — approve manual.</li>
-                <li>Landing pakai kit Aceternity penuh.</li>
+            <div className="tk-card p-5">
+              <h2 className="text-base font-semibold text-zinc-900">Modul</h2>
+              <p className="mt-1 text-sm text-zinc-500">Akses cepat operasional</p>
+              <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {[
+                  ['Properti', '/dashboard/properties'],
+                  ['Kamar', '/dashboard/rooms'],
+                  ['Penyewa', '/dashboard/tenants'],
+                  ['Kontrak', '/dashboard/leases'],
+                  ['Tagihan', '/dashboard/billing'],
+                  ['Pembayaran', '/dashboard/payments'],
+                  ['Pengeluaran', '/dashboard/expenses'],
+                  ['Listrik', '/dashboard/utilities'],
+                  ['Deposit', '/dashboard/deposits'],
+                  ['AI', '/dashboard/ai'],
+                  ['Insights', '/dashboard/insights'],
+                  ['Import', '/dashboard/import'],
+                ].map(([label, href]) => (
+                  <Link
+                    key={href}
+                    href={`${href}?workspaceId=${workspaceId}`}
+                    className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-xs font-medium text-zinc-800 transition hover:border-emerald-300 hover:bg-emerald-50"
+                  >
+                    {label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+            <div className="tk-card p-5">
+              <h2 className="text-base font-semibold text-zinc-900">
+                Human-in-the-loop
+              </h2>
+              <p className="mt-1 text-sm text-zinc-500">AI & kontrol manual</p>
+              <ul className="mt-4 list-disc space-y-1.5 pl-4 text-sm text-zinc-600">
+                <li>OCR / triage / draft hanya saran. Approve manual.</li>
+                <li>Pembayaran dan deposit tidak auto-approve.</li>
                 <li>⌘K buka command palette.</li>
               </ul>
-            </AceCard>
+            </div>
           </div>
         </>
       )}

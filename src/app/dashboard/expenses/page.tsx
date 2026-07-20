@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/auth';
 import {
@@ -9,17 +8,14 @@ import {
   listWorkspaces,
   payExpense,
 } from '@/lib/api';
+import { formatDateId, formatIdr } from '@/lib/format';
 import { ExpenseAiHint } from './expense-ai-hint';
-
-function formatIdr(n: string | number) {
-  const v = typeof n === 'string' ? Number(n) : n;
-  if (Number.isNaN(v)) return String(n);
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(v);
-}
+import {
+  EmptyState,
+  PageHeader,
+  StatusBadge,
+  WorkspaceChips,
+} from '@/components/ui';
 
 async function createAction(formData: FormData) {
   'use server';
@@ -92,49 +88,48 @@ export default async function ExpensesPage({
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">Pengeluaran</h1>
-      <p className="mt-1 text-sm text-zinc-600">Draft → approve → paid.</p>
+      <PageHeader
+        title="Pengeluaran"
+        description="Draft, approve, lalu paid."
+      />
 
       {workspaces.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {workspaces.map((ws) => (
-            <Link
-              key={ws.id}
-              href={`/dashboard/expenses?workspaceId=${ws.id}`}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
-                ws.id === workspaceId
-                  ? 'bg-zinc-900 text-white'
-                  : 'bg-zinc-100 text-zinc-700'
-              }`}
-            >
-              {ws.name}
-            </Link>
-          ))}
-        </div>
+        <WorkspaceChips
+          workspaces={workspaces}
+          workspaceId={workspaceId}
+          hrefFor={(id) => `/dashboard/expenses?workspaceId=${id}`}
+        />
       )}
 
       {error && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
+        <div className="tk-alert mt-4" data-variant="warning">
           {error}
         </div>
       )}
 
-      <ul className="mt-6 divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white">
-        {expenses.length === 0 ? (
-          <li className="p-6 text-sm text-zinc-600">Belum ada pengeluaran.</li>
-        ) : (
-          expenses.map((e) => (
-            <li key={e.id} className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 text-sm">
+      {expenses.length === 0 ? (
+        <EmptyState
+          className="mt-6"
+          title="Belum ada pengeluaran"
+          body="Catat biaya operasional dari form di bawah."
+        />
+      ) : (
+      <ul className="mt-6 space-y-2">
+          {expenses.map((e) => (
+            <li
+              key={e.id}
+              className="tk-card flex flex-wrap items-center justify-between gap-3 px-5 py-4 text-sm"
+            >
               <div>
-                <p className="font-medium">
-                  {e.category}{' '}
-                  <span className="text-xs font-normal text-zinc-500">
-                    {e.status}
-                  </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-semibold text-zinc-900">{e.category}</p>
+                  <StatusBadge status={e.status} kind="invoice" />
+                </div>
+                <p className="mt-1 text-base font-semibold tabular-nums">
+                  {formatIdr(e.amount)}
                 </p>
                 <p className="text-xs text-zinc-500">
-                  {e.property?.name ?? 'Umum'} · {formatIdr(e.amount)} ·{' '}
-                  {String(e.expenseDate).slice(0, 10)}
+                  {e.property?.name ?? 'Umum'} · {formatDateId(e.expenseDate)}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -144,7 +139,7 @@ export default async function ExpensesPage({
                     <input type="hidden" name="workspaceId" value={workspaceId} />
                     <button
                       type="submit"
-                      className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs text-white"
+                      className="tk-btn-sm"
                     >
                       Approve
                     </button>
@@ -156,7 +151,7 @@ export default async function ExpensesPage({
                     <input type="hidden" name="workspaceId" value={workspaceId} />
                     <button
                       type="submit"
-                      className="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs text-white"
+                      className="tk-btn-sm"
                     >
                       Mark paid
                     </button>
@@ -164,56 +159,54 @@ export default async function ExpensesPage({
                 )}
               </div>
             </li>
-          ))
-        )}
+          ))}
       </ul>
+      )}
 
       {workspaceId && (
         <form
           action={createAction}
-          className="mt-8 rounded-xl border border-zinc-200 bg-white p-6"
+          className="tk-card mt-8 p-6"
         >
-          <h2 className="font-medium">Tambah pengeluaran</h2>
+          <h2 className="text-base font-semibold text-zinc-900">
+            Tambah pengeluaran
+          </h2>
           <input type="hidden" name="workspaceId" value={workspaceId} />
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <label className="flex flex-col gap-1 text-sm">
-              <span>Kategori</span>
+            <label className="tk-field">
+              <span className="tk-label">Kategori</span>
               <input
                 name="category"
                 required
                 placeholder="Listrik / Maintenance"
-                className="rounded-lg border border-zinc-300 px-3 py-2"
+                className="tk-input"
               />
             </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span>Nominal</span>
+            <label className="tk-field">
+              <span className="tk-label">Nominal</span>
               <input
                 name="amount"
                 type="number"
                 min={0}
                 step={1000}
                 required
-                className="rounded-lg border border-zinc-300 px-3 py-2"
+                className="tk-input"
               />
             </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span>Tanggal</span>
+            <label className="tk-field">
+              <span className="tk-label">Tanggal</span>
               <input
                 name="expenseDate"
                 type="date"
                 required
                 defaultValue={today}
-                className="rounded-lg border border-zinc-300 px-3 py-2"
+                className="tk-input"
               />
             </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span>Properti (opsional)</span>
-              <select
-                name="propertyId"
-                className="rounded-lg border border-zinc-300 px-3 py-2"
-                defaultValue=""
-              >
-                <option value="">— Umum —</option>
+            <label className="tk-field">
+              <span className="tk-label">Properti (opsional)</span>
+              <select name="propertyId" className="tk-select" defaultValue="">
+                <option value="">Umum</option>
                 {properties.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
@@ -221,19 +214,13 @@ export default async function ExpensesPage({
                 ))}
               </select>
             </label>
-            <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-              <span>Catatan</span>
-              <input
-                name="description"
-                className="rounded-lg border border-zinc-300 px-3 py-2"
-              />
+            <label className="tk-field sm:col-span-2">
+              <span className="tk-label">Catatan</span>
+              <input name="description" className="tk-input" />
             </label>
           </div>
           <ExpenseAiHint workspaceId={workspaceId} />
-          <button
-            type="submit"
-            className="mt-4 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white"
-          >
+          <button type="submit" className="tk-btn mt-4">
             Simpan draft
           </button>
         </form>

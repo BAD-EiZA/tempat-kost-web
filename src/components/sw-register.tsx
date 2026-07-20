@@ -31,7 +31,7 @@ export function SwRegister() {
     <div
       role="region"
       aria-label="Instal aplikasi"
-      className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-[calc(1rem+env(safe-area-inset-right))] z-40 flex items-center rounded-full bg-zinc-900 text-xs font-medium text-white shadow-lg"
+      className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-[calc(1rem+env(safe-area-inset-right))] z-40 flex items-center rounded-full bg-emerald-800 text-xs font-medium text-white shadow-lg"
     >
       <button
         type="button"

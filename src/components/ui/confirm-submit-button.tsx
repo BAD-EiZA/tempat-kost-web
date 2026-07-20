@@ -1,6 +1,7 @@
 'use client';
 
 import { useId, useRef } from 'react';
+import { cn } from '@/lib/utils';
 import { PendingSubmitButton } from './pending-submit-button';
 
 type ConfirmSubmitButtonProps = {
@@ -28,18 +29,35 @@ export function ConfirmSubmitButton({
 
   return (
     <>
-      <button type="button" className={className} onClick={() => dialogRef.current?.showModal()}>
+      <button
+        type="button"
+        className={cn(danger ? 'tk-btn-danger' : 'tk-btn-secondary', className)}
+        onClick={() => dialogRef.current?.showModal()}
+      >
         {children}
       </button>
-      <dialog ref={dialogRef} className="tk-dialog" aria-labelledby={titleId} aria-describedby={descriptionId}>
-        <h2 id={titleId} className="text-lg font-semibold">{title}</h2>
-        <p id={descriptionId} className="mt-2 text-sm text-zinc-600">{description}</p>
+      <dialog
+        ref={dialogRef}
+        className="tk-dialog"
+        aria-labelledby={titleId}
+        aria-describedby={descriptionId}
+      >
+        <h2 id={titleId} className="text-lg font-semibold">
+          {title}
+        </h2>
+        <p id={descriptionId} className="mt-2 text-sm text-zinc-600">
+          {description}
+        </p>
         <div className="mt-6 flex justify-end gap-2">
-          <button type="button" className="rounded-lg border border-zinc-300 px-4 py-2 text-sm" onClick={() => dialogRef.current?.close()}>
+          <button
+            type="button"
+            className="tk-btn-secondary"
+            onClick={() => dialogRef.current?.close()}
+          >
             Batal
           </button>
           <PendingSubmitButton
-            className={`rounded-lg px-4 py-2 text-sm font-medium text-white ${danger ? 'bg-danger' : 'bg-zinc-900'}`}
+            className={danger ? 'tk-btn-danger' : 'tk-btn'}
             pendingLabel={pendingLabel}
           >
             {confirmLabel}

@@ -1,6 +1,12 @@
 import Link from 'next/link';
 import { requireAuth } from '@/lib/auth';
 import { apiFetch, listWorkspaces } from '@/lib/api';
+import {
+  EmptyState,
+  PageHeader,
+  WorkspaceChips,
+} from '@/components/ui';
+import { formatIdr } from '@/lib/format';
 
 type Overview = {
   properties: number;
@@ -31,19 +37,11 @@ type Aging = {
   }>;
 };
 
-function formatIdr(n: number) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(n);
-}
-
 const BUCKET_LABEL: Record<string, string> = {
   current: 'Belum jatuh tempo',
-  d1_30: '1–30 hari',
-  d31_60: '31–60 hari',
-  d61_90: '61–90 hari',
+  d1_30: '1-30 hari',
+  d31_60: '31-60 hari',
+  d61_90: '61-90 hari',
   d90_plus: '>90 hari',
 };
 
@@ -112,44 +110,47 @@ export default async function ReportsPage({
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">Laporan</h1>
+      <PageHeader
+        title="Laporan"
+        description="Ringkasan keuangan, aging, okupansi, dan ekspor data."
+      />
       {workspaces.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {workspaces.map((ws) => (
-            <Link
-              key={ws.id}
-              href={`/dashboard/reports?workspaceId=${ws.id}`}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
-                ws.id === workspaceId ? 'bg-zinc-900 text-white' : 'bg-zinc-100'
-              }`}
-            >
-              {ws.name}
-            </Link>
-          ))}
-        </div>
+        <WorkspaceChips
+          workspaces={workspaces}
+          workspaceId={workspaceId}
+          hrefFor={(id) => `/dashboard/reports?workspaceId=${id}`}
+        />
       )}
       {error && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
+        <div className="tk-alert mt-4" data-variant="warning">
           {error}
         </div>
       )}
+
+      {!workspaceId && !error ? (
+        <EmptyState
+          className="mt-6"
+          title="Pilih workspace"
+          body="Pilih workspace di atas untuk memuat laporan."
+        />
+      ) : null}
 
       {(pnl || occupancy) && (
         <div className="mt-6 grid gap-3 sm:grid-cols-3">
           {pnl && (
             <>
-              <div className="rounded-xl border bg-white p-4">
+              <div className="tk-card p-4">
                 <p className="text-xs text-zinc-500">Pendapatan</p>
-                <p className="mt-1 text-lg font-semibold">
+                <p className="mt-1 text-xl font-semibold tabular-nums">
                   {formatIdr(pnl.income)}
                 </p>
                 <p className="text-[11px] text-zinc-400">
                   Periode {pnl.from} sampai {pnl.to}
                 </p>
               </div>
-              <div className="rounded-xl border bg-white p-4">
+              <div className="tk-card p-4">
                 <p className="text-xs text-zinc-500">Pengeluaran</p>
-                <p className="mt-1 text-lg font-semibold">
+                <p className="mt-1 text-xl font-semibold tabular-nums">
                   {formatIdr(pnl.expense)}
                 </p>
                 <p className="text-[11px] text-zinc-400">
@@ -159,9 +160,9 @@ export default async function ReportsPage({
             </>
           )}
           {occupancy && (
-            <div className="rounded-xl border bg-white p-4">
+            <div className="tk-card p-4">
               <p className="text-xs text-zinc-500">Okupansi saat ini</p>
-              <p className="mt-1 text-lg font-semibold">
+              <p className="mt-1 text-xl font-semibold tabular-nums">
                 {occupancy.occupancyRate}%
               </p>
               <p className="text-[11px] text-zinc-400">

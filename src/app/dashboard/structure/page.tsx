@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/auth';
 import { apiFetch, listProperties, listWorkspaces } from '@/lib/api';
+import { WorkspaceChips, PageHeader } from '@/components/ui';
 
 async function createBuilding(formData: FormData) {
   'use server';
@@ -101,21 +102,16 @@ export default async function StructurePage({
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">Struktur & tipe kamar</h1>
+      <PageHeader
+        title="Struktur & tipe kamar"
+        description="Gedung, lantai, dan tipe kamar per properti."
+      />
       {workspaces.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {workspaces.map((ws) => (
-            <Link
-              key={ws.id}
-              href={`/dashboard/structure?workspaceId=${ws.id}`}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
-                ws.id === workspaceId ? 'bg-zinc-900 text-white' : 'bg-zinc-100'
-              }`}
-            >
-              {ws.name}
-            </Link>
-          ))}
-        </div>
+        <WorkspaceChips
+          workspaces={workspaces}
+          workspaceId={workspaceId}
+          hrefFor={(id) => `/dashboard/structure?workspaceId=${id}`}
+        />
       )}
       {properties.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2">
@@ -123,9 +119,9 @@ export default async function StructurePage({
             <Link
               key={p.id}
               href={`/dashboard/structure?workspaceId=${workspaceId}&propertyId=${p.id}`}
-              className={`rounded-full px-3 py-1 text-xs ${
-                p.id === propertyId ? 'bg-zinc-800 text-white' : 'bg-zinc-50'
-              }`}
+              className={
+                p.id === propertyId ? 'tk-chip tk-chip-active' : 'tk-chip'
+              }
             >
               {p.name}
             </Link>
@@ -133,20 +129,20 @@ export default async function StructurePage({
         </div>
       )}
       {error && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
+        <div className="tk-alert mt-4" data-variant="warning">
           {error}
         </div>
       )}
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
-        <section className="rounded-xl border bg-white p-5">
+        <section className="tk-card p-5">
           <h2 className="font-medium">Gedung / lantai</h2>
           <ul className="mt-2 space-y-2 text-sm">
             {buildings.map((b) => (
-              <li key={b.id} className="rounded border border-zinc-100 p-2">
+              <li key={b.id} className="rounded-xl border border-zinc-100 p-2">
                 <p className="font-medium">{b.name}</p>
                 <p className="text-xs text-zinc-500">
-                  Lantai: {b.floors.map((f) => f.name).join(', ') || '—'}
+                  Lantai: {b.floors.map((f) => f.name).join(', ') || '-'}
                 </p>
                 {workspaceId && propertyId && (
                   <form action={createFloor} className="mt-2 flex gap-1">
@@ -157,15 +153,15 @@ export default async function StructurePage({
                       name="name"
                       required
                       placeholder="Lantai 1"
-                      className="flex-1 rounded border px-2 py-1 text-xs"
+                      className="tk-input flex-1 !px-2 !py-1 !text-xs"
                     />
                     <input
                       name="level"
                       type="number"
                       defaultValue={b.floors.length + 1}
-                      className="w-14 rounded border px-1 text-xs"
+                      className="tk-input w-14 !px-1 !text-xs"
                     />
-                    <button type="submit" className="rounded bg-zinc-900 px-2 text-xs text-white">
+                    <button type="submit" className="tk-btn-sm">
                       +
                     </button>
                   </form>
@@ -181,16 +177,16 @@ export default async function StructurePage({
                 name="name"
                 required
                 placeholder="Nama gedung/blok"
-                className="flex-1 rounded border px-2 py-1 text-sm"
+                className="tk-input flex-1 !px-2 !py-1 !text-sm"
               />
-              <button type="submit" className="rounded bg-zinc-900 px-3 py-1 text-sm text-white">
+              <button type="submit" className="tk-btn-sm">
                 + Gedung
               </button>
             </form>
           )}
         </section>
 
-        <section className="rounded-xl border bg-white p-5">
+        <section className="tk-card p-5">
           <h2 className="font-medium">Tipe kamar</h2>
           <ul className="mt-2 divide-y text-sm">
             {roomTypes.map((rt) => (
@@ -208,29 +204,29 @@ export default async function StructurePage({
                 name="name"
                 required
                 placeholder="Standard / Deluxe"
-                className="rounded border px-2 py-1 text-sm"
+                className="tk-input !px-2 !py-1 !text-sm"
               />
               <div className="flex gap-2">
                 <input
                   name="baseRent"
                   type="number"
                   placeholder="Sewa"
-                  className="flex-1 rounded border px-2 py-1 text-sm"
+                  className="tk-input flex-1 !px-2 !py-1 !text-sm"
                 />
                 <input
                   name="defaultDeposit"
                   type="number"
                   placeholder="Deposit"
-                  className="flex-1 rounded border px-2 py-1 text-sm"
+                  className="tk-input flex-1 !px-2 !py-1 !text-sm"
                 />
                 <input
                   name="capacity"
                   type="number"
                   defaultValue={1}
-                  className="w-16 rounded border px-2 py-1 text-sm"
+                  className="tk-input w-16 !px-2 !py-1 !text-sm"
                 />
               </div>
-              <button type="submit" className="rounded bg-zinc-900 px-3 py-1 text-sm text-white">
+              <button type="submit" className="tk-btn-sm">
                 + Tipe kamar
               </button>
             </form>

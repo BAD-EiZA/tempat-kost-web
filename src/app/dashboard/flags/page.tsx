@@ -1,7 +1,7 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/auth';
 import { apiFetch, listWorkspaces } from '@/lib/api';
+import { PageHeader, WorkspaceChips } from '@/components/ui';
 
 const DEFAULT_FLAGS = [
   'ai_ocr',
@@ -54,36 +54,31 @@ export default async function FlagsPage({
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">Feature flags</h1>
+      <PageHeader
+        title="Feature flags"
+        description="Aktifkan atau nonaktifkan modul per workspace."
+      />
       {workspaces.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {workspaces.map((ws) => (
-            <Link
-              key={ws.id}
-              href={`/dashboard/flags?workspaceId=${ws.id}`}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
-                ws.id === workspaceId ? 'bg-zinc-900 text-white' : 'bg-zinc-100'
-              }`}
-            >
-              {ws.name}
-            </Link>
-          ))}
-        </div>
+        <WorkspaceChips
+          workspaces={workspaces}
+          workspaceId={workspaceId}
+          hrefFor={(id) => `/dashboard/flags?workspaceId=${id}`}
+        />
       )}
       {error && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
+        <div className="tk-alert mt-4" data-variant="warning">
           {error}
         </div>
       )}
-      <ul className="mt-6 divide-y rounded-xl border bg-white">
+      <ul className="mt-6 space-y-2">
         {DEFAULT_FLAGS.map((key) => {
           const enabled = map.get(key) ?? true;
           return (
             <li
               key={key}
-              className="flex items-center justify-between px-6 py-3 text-sm"
+              className="tk-card flex items-center justify-between px-5 py-3 text-sm"
             >
-              <span className="font-mono text-xs">{key}</span>
+              <span className="font-mono text-xs text-zinc-700">{key}</span>
               <form action={toggleFlag}>
                 <input type="hidden" name="workspaceId" value={workspaceId} />
                 <input type="hidden" name="key" value={key} />
@@ -94,11 +89,11 @@ export default async function FlagsPage({
                 />
                 <button
                   type="submit"
-                  className={`rounded px-3 py-1 text-xs ${
+                  className={
                     enabled
-                      ? 'bg-emerald-700 text-white'
-                      : 'border border-zinc-300 text-zinc-600'
-                  }`}
+                      ? 'tk-btn-sm'
+                      : 'tk-btn-secondary !px-3 !py-1 !text-xs'
+                  }
                 >
                   {enabled ? 'ON' : 'OFF'}
                 </button>

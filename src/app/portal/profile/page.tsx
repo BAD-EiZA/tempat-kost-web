@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/auth';
 import { apiFetch } from '@/lib/api';
 import { resolvePortalTenantId } from '@/lib/portal-tenant';
+import { EmptyState } from '@/components/ui';
+import { PortalPageHeader } from '@/components/portal/page-header';
 
 type Profile = {
   id: string;
@@ -54,73 +56,85 @@ export default async function PortalProfilePage({
   }
 
   return (
-    <>
-      <h1 className="text-xl font-semibold">Profil</h1>
-      {sp.saved && (
-        <p className="mt-2 text-sm text-emerald-700">Profil disimpan.</p>
-      )}
-      {error && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
+    <div className="space-y-4">
+      <PortalPageHeader
+        title="Profil"
+        description="Data kontak dan darurat."
+      />
+      {sp.saved ? (
+        <div className="tk-alert" data-variant="success">
+          Profil disimpan.
+        </div>
+      ) : null}
+      {error ? (
+        <div className="tk-alert" data-variant="warning">
           {error}
         </div>
-      )}
+      ) : null}
+
       {!profile ? (
-        <p className="mt-4 text-sm text-zinc-500">
-          Profil penyewa belum terhubung.
-        </p>
+        <EmptyState
+          title="Profil penyewa belum terhubung"
+          body="Hubungi pengelola untuk menghubungkan akun Anda."
+        />
       ) : (
-        <form action={saveAction} className="mt-6 space-y-3 rounded-xl border bg-white p-5">
+        <form action={saveAction} className="tk-card space-y-3 p-5">
           <input type="hidden" name="tenantId" value={profile.id} />
-          <p className="text-sm font-medium">{profile.fullName}</p>
-          <label className="block text-sm">
-            Nama panggilan
+          <p className="text-sm font-semibold text-zinc-900">
+            {profile.fullName}
+          </p>
+          <label className="tk-field">
+            <span className="tk-label">Nama panggilan</span>
             <input
               name="preferredName"
               defaultValue={profile.preferredName ?? ''}
-              className="mt-1 w-full rounded border px-3 py-2"
+              className="tk-input"
             />
           </label>
-          <label className="block text-sm">
-            Telepon / WA
+          <label className="tk-field">
+            <span className="tk-label">Telepon / WA</span>
             <input
               name="phone"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
               defaultValue={profile.phone ?? ''}
-              className="mt-1 w-full rounded border px-3 py-2"
+              className="tk-input"
             />
           </label>
-          <label className="block text-sm">
-            Email
+          <label className="tk-field">
+            <span className="tk-label">Email</span>
             <input
               name="email"
               type="email"
+              autoComplete="email"
               defaultValue={profile.email ?? ''}
-              className="mt-1 w-full rounded border px-3 py-2"
+              className="tk-input"
             />
           </label>
-          <label className="block text-sm">
-            Kontak darurat
+          <label className="tk-field">
+            <span className="tk-label">Kontak darurat</span>
             <input
               name="emergencyName"
               defaultValue={profile.emergencyName ?? ''}
-              className="mt-1 w-full rounded border px-3 py-2"
+              className="tk-input"
             />
           </label>
-          <label className="block text-sm">
-            Telepon darurat
+          <label className="tk-field">
+            <span className="tk-label">Telepon darurat</span>
             <input
               name="emergencyPhone"
+              type="tel"
+              inputMode="tel"
               defaultValue={profile.emergencyPhone ?? ''}
-              className="mt-1 w-full rounded border px-3 py-2"
+              className="tk-input"
             />
           </label>
-          <button
-            type="submit"
-            className="w-full rounded-lg bg-zinc-900 py-2.5 text-sm text-white"
-          >
+          <button type="submit" className="tk-btn w-full !py-2.5">
             Simpan
           </button>
         </form>
       )}
-    </>
+    </div>
   );
 }

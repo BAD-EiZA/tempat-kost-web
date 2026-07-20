@@ -1,6 +1,13 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Alert, ConfirmSubmitButton, PendingSubmitButton } from '@/components/ui';
+import {
+  Alert,
+  ConfirmSubmitButton,
+  EmptyState,
+  PageHeader,
+  PendingSubmitButton,
+  StatusBadge,
+  WorkspaceChips,
+} from '@/components/ui';
 import { requireAuth } from '@/lib/auth';
 import {
   apiFetch,
@@ -11,17 +18,8 @@ import {
   listTenants,
   listWorkspaces,
 } from '@/lib/api';
+import { formatDateId, formatIdr } from '@/lib/format';
 import { CreateLeaseForm } from './create-lease-form';
-
-function formatIdr(n: string | number) {
-  const v = typeof n === 'string' ? Number(n) : n;
-  if (Number.isNaN(v)) return String(n);
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(v);
-}
 
 async function createLeaseAction(formData: FormData) {
   'use server';
@@ -148,10 +146,10 @@ export default async function LeasesPage({
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">Kontrak</h1>
-      <p className="mt-1 text-sm text-zinc-600">
-        Draft → generate e-sign → aktifkan → akhiri.
-      </p>
+      <PageHeader
+        title="Kontrak"
+        description="Draft, e-sign, aktifkan, lalu akhiri sewa."
+      />
       {signToken && (
         <Alert variant="success" className="mt-3">
           Kontrak dibuat{contractId ? ` (${contractId.slice(0, 8)}…)` : ''}.{' '}
@@ -168,116 +166,113 @@ export default async function LeasesPage({
       )}
 
       {workspaces.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {workspaces.map((ws) => (
-            <Link
-              key={ws.id}
-              href={`/dashboard/leases?workspaceId=${ws.id}`}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
-                ws.id === workspaceId
-                  ? 'bg-zinc-900 text-white'
-                  : 'bg-zinc-100 text-zinc-700'
-              }`}
-            >
-              {ws.name}
-            </Link>
-          ))}
-        </div>
+        <WorkspaceChips
+          workspaces={workspaces}
+          workspaceId={workspaceId}
+          hrefFor={(id) => `/dashboard/leases?workspaceId=${id}`}
+        />
       )}
 
       {error && (
         <Alert variant="error" className="mt-4">{error}</Alert>
       )}
 
-      <ul className="mt-6 divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white">
-        {leases.length === 0 ? (
-          <li className="p-6 text-sm text-zinc-600">Belum ada kontrak.</li>
-        ) : (
-          leases.map((l) => (
+      {leases.length === 0 ? (
+        <EmptyState
+          className="mt-6"
+          title="Belum ada kontrak"
+          body="Buat kontrak dari form di bawah setelah properti, kamar, dan penyewa siap."
+        />
+      ) : (
+      <ul className="tk-list mt-6">
+          {leases.map((l) => (
             <li key={l.id} className="px-6 py-4 text-sm">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="font-medium">
-                    {l.leaseNumber}{' '}
-                    <span className="text-xs font-normal text-zinc-500">
-                      {l.status}
-                    </span>
-                  </p>
-                  <p className="text-xs text-zinc-500">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-medium">{l.leaseNumber}</p>
+                    <StatusBadge status={l.status} kind="lease" />
+                  </div>
+                  <p className="mt-1 text-xs text-zinc-500">
                     {l.tenant?.fullName} · {l.property?.name} / {l.room?.name} ·{' '}
                     {formatIdr(l.rentAmount)}
                   </p>
                   <p className="text-xs text-zinc-400">
-                    {String(l.startDate).slice(0, 10)}
-                    {l.endDate ? ` → ${String(l.endDate).slice(0, 10)}` : ''}
+                    {formatDateId(l.startDate)}
+                    {l.endDate ? ` - ${formatDateId(l.endDate)}` : ''}
                   </p>
-                  <form action={generateContractAction} className="mt-1">
+                  <form action={generateContractAction} className="mt-2">
                     <input type="hidden" name="leaseId" value={l.id} />
                     <input type="hidden" name="workspaceId" value={workspaceId} />
-                    <button
-                      type="submit"
-                      className="text-[10px] font-medium underline"
-                    >
-                      Generate kontrak + e-sign link
+                    <button type="submit" className="tk-btn-secondary !px-2 !py-1 !text-[11px]">
+                      Generate e-sign
                     </button>
                   </form>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-3 sm:min-w-[14rem]">
                   {l.status === 'DRAFT' ||
                   l.status === 'UPCOMING' ||
                   l.status === 'PENDING_SIGNATURE' ? (
                     <form
                       action={activateAction}
-                      className="flex max-w-xs flex-col gap-1 text-[10px] text-zinc-600"
+                      className="rounded-xl border border-zinc-100 bg-zinc-50 p-3 text-xs text-zinc-700"
                     >
+                      <p className="mb-2 text-[11px] font-semibold text-zinc-900">
+                        Check-in / aktifkan
+                      </p>
                       <input type="hidden" name="id" value={l.id} />
                       <input
                         type="hidden"
                         name="workspaceId"
                         value={workspaceId}
                       />
-                      <label className="flex items-center gap-1">
-                        <input type="checkbox" name="identityVerified" defaultChecked /> ID
-                      </label>
-                      <label className="flex items-center gap-1">
-                        <input type="checkbox" name="contractSigned" defaultChecked /> Kontrak
-                      </label>
-                      <label className="flex items-center gap-1">
-                        <input type="checkbox" name="depositRecorded" defaultChecked /> Deposit
-                      </label>
-                      <label className="flex items-center gap-1">
-                        <input type="checkbox" name="keysHanded" defaultChecked /> Kunci
-                      </label>
-                      <label className="flex items-center gap-1">
-                        <input type="checkbox" name="rulesAccepted" defaultChecked /> Peraturan
-                      </label>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <label className="flex items-center gap-1.5">
+                          <input type="checkbox" name="identityVerified" defaultChecked /> ID
+                        </label>
+                        <label className="flex items-center gap-1.5">
+                          <input type="checkbox" name="contractSigned" defaultChecked /> Kontrak
+                        </label>
+                        <label className="flex items-center gap-1.5">
+                          <input type="checkbox" name="depositRecorded" defaultChecked /> Deposit
+                        </label>
+                        <label className="flex items-center gap-1.5">
+                          <input type="checkbox" name="keysHanded" defaultChecked /> Kunci
+                        </label>
+                        <label className="col-span-2 flex items-center gap-1.5">
+                          <input type="checkbox" name="rulesAccepted" defaultChecked /> Peraturan
+                        </label>
+                      </div>
                       <input
                         name="meterInitial"
                         type="number"
                         step="0.01"
                         placeholder="Meter awal"
-                        className="rounded border px-1 py-0.5"
+                        className="tk-input mt-2 w-full !py-1.5 !text-xs"
                       />
                       <PendingSubmitButton
-                        className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white"
+                        className="tk-btn-sm mt-2 w-full"
                         pendingLabel="Mengaktifkan..."
                       >
-                        Check-in / Aktifkan
+                        Aktifkan
                       </PendingSubmitButton>
                     </form>
                   ) : null}
                   {(l.status === 'ACTIVE' || l.status === 'ENDING_SOON') && (
                     <form
                       action={endAction}
-                      className="flex max-w-xs flex-col gap-1 text-[10px] text-zinc-600"
+                      className="rounded-xl border border-zinc-100 bg-zinc-50 p-3 text-xs text-zinc-700"
                     >
+                      <p className="mb-2 text-[11px] font-semibold text-zinc-900">
+                        Check-out / akhiri
+                      </p>
                       <input type="hidden" name="id" value={l.id} />
                       <input
                         type="hidden"
                         name="workspaceId"
                         value={workspaceId}
                       />
-                      <label className="flex items-center gap-1">
+                      <label className="flex items-center gap-1.5">
                         <input type="checkbox" name="keysReturned" defaultChecked /> Kunci kembali
                       </label>
                       <input
@@ -285,21 +280,21 @@ export default async function LeasesPage({
                         type="number"
                         step="0.01"
                         placeholder="Meter akhir"
-                        className="rounded border px-1 py-0.5"
+                        className="tk-input mt-2 w-full !py-1.5 !text-xs"
                       />
                       <input
                         name="damageCost"
                         type="number"
                         placeholder="Biaya rusak"
-                        className="rounded border px-1 py-0.5"
+                        className="tk-input mt-1.5 w-full !py-1.5 !text-xs"
                       />
                       <input
                         name="depositSettlement"
                         placeholder="Catatan deposit"
-                        className="rounded border px-1 py-0.5"
+                        className="tk-input mt-1.5 w-full !py-1.5 !text-xs"
                       />
                       <ConfirmSubmitButton
-                        className="rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium"
+                        className="tk-btn-secondary mt-2 w-full !text-xs"
                         title="Akhiri kontrak?"
                         description={`Kontrak ${l.leaseNumber} akan diakhiri memakai data serah-terima dan biaya yang diisi.`}
                         confirmLabel="Ya, akhiri"
@@ -313,9 +308,9 @@ export default async function LeasesPage({
                 </div>
               </div>
             </li>
-          ))
-        )}
+          ))}
       </ul>
+      )}
 
       {workspaceId &&
         properties.length > 0 &&
@@ -331,11 +326,16 @@ export default async function LeasesPage({
           />
         )}
 
-      {workspaceId && (properties.length === 0 || tenants.length === 0 || rooms.length === 0) && (
-        <p className="mt-6 text-sm text-zinc-600">
-          Butuh minimal 1 properti, 1 kamar, dan 1 penyewa sebelum buat kontrak.
-        </p>
-      )}
+      {workspaceId &&
+        (properties.length === 0 ||
+          tenants.length === 0 ||
+          rooms.length === 0) && (
+          <EmptyState
+            className="mt-6"
+            title="Belum siap buat kontrak"
+            body="Butuh minimal 1 properti, 1 kamar, dan 1 penyewa."
+          />
+        )}
     </>
   );
 }

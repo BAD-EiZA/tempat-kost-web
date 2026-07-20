@@ -108,44 +108,46 @@ export function PublicBookForm({
 
   if (!rooms.length) {
     return (
-      <p className="mt-6 text-sm text-zinc-500">Tidak ada kamar tersedia untuk booking online.</p>
+      <p className="mt-6 text-sm text-zinc-500">
+        Tidak ada kamar tersedia untuk booking online.
+      </p>
     );
   }
 
   return (
     <form
       onSubmit={(e) => void submit(e)}
-      className="mt-8 space-y-3 rounded-xl border bg-white p-5"
+      className="tk-card mt-8 space-y-3 p-5"
     >
-      <h2 className="font-semibold">Booking online</h2>
-      <label className="block text-sm">
-        Kamar
+      <h2 className="text-base font-semibold text-zinc-900">Booking online</h2>
+      <label className="flex flex-col gap-1.5 text-sm">
+        <span className="font-medium text-zinc-800">Kamar</span>
         <select
           value={roomId}
           onChange={(e) => setRoomId(e.target.value)}
-          className="mt-1 w-full rounded border px-3 py-2"
+          className="tk-input w-full"
           required
         >
           {rooms.map((r) => (
             <option key={r.id} value={r.id}>
-              {r.name} — Rp {Number(r.rentAmount).toLocaleString('id-ID')}
+              {r.name} - Rp {Number(r.rentAmount).toLocaleString('id-ID')}
             </option>
           ))}
         </select>
       </label>
-      <label className="block text-sm">
-        Nama lengkap
+      <label className="flex flex-col gap-1.5 text-sm">
+        <span className="font-medium text-zinc-800">Nama lengkap</span>
         <input
           name="name"
           autoComplete="name"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
           required
-          className="mt-1 w-full rounded border px-3 py-2"
+          className="tk-input w-full"
         />
       </label>
-      <label className="block text-sm">
-        WhatsApp / telepon
+      <label className="flex flex-col gap-1.5 text-sm">
+        <span className="font-medium text-zinc-800">WhatsApp / telepon</span>
         <input
           type="tel"
           name="tel"
@@ -154,26 +156,34 @@ export function PublicBookForm({
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           required
-          className="mt-1 w-full rounded border px-3 py-2"
+          className="tk-input w-full"
         />
       </label>
-      <label className="block text-sm">
-        Email (opsional)
+      <label className="flex flex-col gap-1.5 text-sm">
+        <span className="font-medium text-zinc-800">Email (opsional)</span>
         <input
           type="email"
           name="email"
           autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="mt-1 w-full rounded border px-3 py-2"
+          className="tk-input w-full"
         />
       </label>
-      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
-      {msg && <p role="status" className="text-sm text-emerald-700">{msg}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-red-600">
+          {error}
+        </p>
+      )}
+      {msg && (
+        <p role="status" className="text-sm text-emerald-800">
+          {msg}
+        </p>
+      )}
       <button
         type="submit"
         disabled={busy}
-        className="w-full rounded-xl py-3 text-sm font-medium text-white disabled:opacity-50"
+        className="w-full rounded-xl py-3 text-sm font-medium transition active:scale-[0.98] disabled:opacity-50"
         style={{ backgroundColor: accent, color: accentForeground }}
       >
         {busy ? 'Memproses…' : 'Booking & bayar fee'}

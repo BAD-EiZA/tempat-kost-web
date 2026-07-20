@@ -146,7 +146,7 @@ export function AiActions({
         <div className="text-sm">
           <p>
             Saran: <b>{String(r.action)}</b> · Rp{' '}
-            {Number(r.low ?? 0).toLocaleString('id-ID')} – Rp{' '}
+            {Number(r.low ?? 0).toLocaleString('id-ID')} - Rp{' '}
             {Number(r.high ?? 0).toLocaleString('id-ID')}
           </p>
           {r.peerAvgRent != null && (
@@ -182,7 +182,7 @@ export function AiActions({
               {j.categories.map((c, i) => (
                 <li
                   key={i}
-                  className="flex items-center justify-between rounded-lg border px-3 py-2 text-xs"
+                  className="flex items-center justify-between tk-input text-xs"
                 >
                   <span>
                     <b>{c.label}</b> ({c.key})
@@ -229,7 +229,7 @@ export function AiActions({
         return (
           <div className="text-sm">
             <p>
-              Estimasi: Rp {Number(j.lowAmount ?? 0).toLocaleString('id-ID')} –{' '}
+              Estimasi: Rp {Number(j.lowAmount ?? 0).toLocaleString('id-ID')} -{' '}
               Rp {Number(j.highAmount ?? 0).toLocaleString('id-ID')}
             </p>
             <pre className="mt-2 max-h-60 overflow-auto text-[10px]">
@@ -274,12 +274,12 @@ export function AiActions({
             name="query"
             required
             placeholder="Penyewa belum bayar"
-            className="mt-3 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm"
+            className="mt-3 w-full tk-input text-sm"
           />
           <button
             type="submit"
             disabled={busy}
-            className="mt-3 rounded-xl bg-zinc-900 px-3 py-2 text-sm text-white disabled:opacity-50"
+            className="mt-3 tk-btn disabled:opacity-50"
           >
             Cari
           </button>
@@ -314,21 +314,21 @@ export function AiActions({
         >
           <h2 className="font-medium">Draft komunikasi</h2>
           <p className="mt-0.5 text-[10px] text-zinc-500">
-            Generate saja — tidak mengirim WA/email
+            Generate saja - tidak mengirim WA/email
           </p>
           <input
             value={commPurpose}
             onChange={(e) => setCommPurpose(e.target.value)}
             required
             placeholder="Reminder sewa sopan"
-            className="mt-3 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm"
+            className="mt-3 w-full tk-input text-sm"
           />
           <textarea
             value={commContext}
             onChange={(e) => setCommContext(e.target.value)}
             rows={2}
             placeholder='Konteks: {"tenant":"Budi","amount":1500000} atau teks bebas'
-            className="mt-2 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm"
+            className="mt-2 w-full tk-input text-sm"
           />
           <div className="mt-2 flex gap-2">
             <select
@@ -353,7 +353,7 @@ export function AiActions({
           <button
             type="submit"
             disabled={busy}
-            className="mt-3 rounded-xl bg-zinc-900 px-3 py-2 text-sm text-white disabled:opacity-50"
+            className="mt-3 tk-btn disabled:opacity-50"
           >
             Generate draft
           </button>
@@ -376,19 +376,19 @@ export function AiActions({
             onChange={(e) => setExpenseDesc(e.target.value)}
             required
             placeholder="Bayar listrik PLN Maret"
-            className="mt-3 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm"
+            className="mt-3 w-full tk-input text-sm"
           />
           <input
             value={expenseAmount}
             onChange={(e) => setExpenseAmount(e.target.value)}
             type="number"
             placeholder="Nominal (opsional)"
-            className="mt-2 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm"
+            className="mt-2 w-full tk-input text-sm"
           />
           <button
             type="submit"
             disabled={busy}
-            className="mt-3 rounded-xl bg-zinc-900 px-3 py-2 text-sm text-white disabled:opacity-50"
+            className="mt-3 tk-btn disabled:opacity-50"
           >
             Klasifikasi
           </button>
@@ -435,7 +435,7 @@ export function AiActions({
           <select
             value={roomId}
             onChange={(e) => setRoomId(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm"
+            className="tk-input mt-1 w-full"
             required
           >
             <option value="">Pilih kamar</option>
@@ -447,7 +447,7 @@ export function AiActions({
           <button
             type="submit"
             disabled={busy}
-            className="mt-3 rounded-xl bg-zinc-900 px-3 py-2 text-sm text-white disabled:opacity-50"
+            className="mt-3 tk-btn disabled:opacity-50"
           >
             Analisis
           </button>
@@ -470,12 +470,12 @@ export function AiActions({
             required
             rows={2}
             placeholder="Deskripsi kerusakan"
-            className="mt-3 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm"
+            className="mt-3 w-full tk-input text-sm"
           />
           <button
             type="submit"
             disabled={busy}
-            className="mt-3 rounded-xl bg-zinc-900 px-3 py-2 text-sm text-white disabled:opacity-50"
+            className="mt-3 tk-btn disabled:opacity-50"
           >
             Klasifikasi
           </button>
@@ -498,7 +498,7 @@ export function AiActions({
           <button
             type="submit"
             disabled={busy || !maintDesc}
-            className="mt-3 rounded-xl bg-zinc-900 px-3 py-2 text-sm text-white disabled:opacity-50"
+            className="mt-3 tk-btn disabled:opacity-50"
           >
             Estimasi
           </button>

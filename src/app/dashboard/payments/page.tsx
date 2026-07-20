@@ -1,6 +1,13 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Alert, ConfirmSubmitButton } from '@/components/ui';
+import {
+  Alert,
+  ConfirmSubmitButton,
+  EmptyState,
+  PageHeader,
+  StatusBadge,
+  WorkspaceChips,
+} from '@/components/ui';
 import { requireAuth } from '@/lib/auth';
 import {
   confirmPayment,
@@ -8,16 +15,7 @@ import {
   listWorkspaces,
   rejectPayment,
 } from '@/lib/api';
-
-function formatIdr(n: string | number) {
-  const v = typeof n === 'string' ? Number(n) : n;
-  if (Number.isNaN(v)) return String(n);
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(v);
-}
+import { formatIdr } from '@/lib/format';
 
 async function confirmAction(formData: FormData) {
   'use server';
@@ -62,59 +60,59 @@ export default async function PaymentsPage({
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Pembayaran</h1>
-          <p className="mt-1 text-sm text-zinc-600">
-            Konfirmasi / tolak pembayaran manual. AI OCR belakangan (Phase 2).
-          </p>
-        </div>
-        <Link
-          href={`/dashboard/billing?workspaceId=${workspaceId}`}
-          className="text-sm underline"
-        >
-          ← Tagihan
-        </Link>
-      </div>
+      <PageHeader
+        title="Pembayaran"
+        description="Konfirmasi atau tolak pembayaran manual."
+        actions={
+          <Link
+            href={`/dashboard/billing?workspaceId=${workspaceId}`}
+            className="text-sm font-medium text-emerald-800 underline-offset-2 hover:underline"
+          >
+            Tagihan
+          </Link>
+        }
+      />
 
       {workspaces.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {workspaces.map((ws) => (
-            <Link
-              key={ws.id}
-              href={`/dashboard/payments?workspaceId=${ws.id}`}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
-                ws.id === workspaceId
-                  ? 'bg-zinc-900 text-white'
-                  : 'bg-zinc-100 text-zinc-700'
-              }`}
-            >
-              {ws.name}
-            </Link>
-          ))}
-        </div>
+        <WorkspaceChips
+          workspaces={workspaces}
+          workspaceId={workspaceId}
+          hrefFor={(id) => `/dashboard/payments?workspaceId=${id}`}
+        />
       )}
 
       {error && (
-        <Alert variant="error" className="mt-4">{error}</Alert>
+        <Alert variant="error" className="mt-4">
+          {error}
+        </Alert>
       )}
 
-      <ul className="mt-6 divide-y divide-zinc-200 rounded-xl border border-zinc-200 bg-white">
-        {payments.length === 0 ? (
-          <li className="p-6 text-sm text-zinc-600">Belum ada pembayaran.</li>
-        ) : (
-          payments.map((p) => (
-            <li key={p.id} className="px-6 py-4 text-sm">
+      {payments.length === 0 ? (
+        <EmptyState
+          className="mt-6"
+          title="Belum ada pembayaran"
+          body="Pembayaran manual dari tagihan akan muncul di sini untuk dikonfirmasi."
+        />
+      ) : (
+        <ul className="mt-6 space-y-2">
+          {payments.map((p) => (
+            <li key={p.id} className="tk-card px-5 py-4 text-sm">
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="font-medium">
-                    {p.paymentNumber}{' '}
-                    <span className="text-xs font-normal text-zinc-500">
-                      {p.status} · {p.method}
-                    </span>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-semibold text-zinc-900">
+                      {p.paymentNumber}
+                    </p>
+                    <StatusBadge status={p.status} kind="payment" />
+                    {p.method ? (
+                      <span className="text-xs text-zinc-400">{p.method}</span>
+                    ) : null}
+                  </div>
+                  <p className="mt-1 text-base font-semibold tabular-nums text-zinc-900">
+                    {formatIdr(p.amount)}
                   </p>
-                  <p className="text-xs text-zinc-500">
-                    {p.tenant?.fullName ?? '—'} · {formatIdr(p.amount)}
+                  <p className="mt-0.5 text-xs text-zinc-500">
+                    {p.tenant?.fullName ?? '-'}
                     {p.manualReference ? ` · ref ${p.manualReference}` : ''}
                   </p>
                   {p.allocations?.map(
@@ -122,19 +120,21 @@ export default async function PaymentsPage({
                       id: string;
                       invoice?: { invoiceNumber: string; status?: string };
                     }) => (
-                    <p key={a.id} className="text-xs text-zinc-400">
-                      → {a.invoice?.invoiceNumber} ({a.invoice?.status})
-                    </p>
-                  ))}
+                      <p key={a.id} className="text-xs text-zinc-400">
+                        {a.invoice?.invoiceNumber}
+                        {a.invoice?.status ? ` (${a.invoice.status})` : ''}
+                      </p>
+                    ),
+                  )}
                   <Link
                     href={`/dashboard/payments/${p.id}?workspaceId=${workspaceId}`}
-                    className="mt-1 inline-block text-xs underline"
+                    className="mt-2 inline-block text-xs font-medium text-emerald-800 underline-offset-2 hover:underline"
                   >
                     Detail / OCR / kuitansi
                   </Link>
                 </div>
                 {p.status === 'PENDING' && (
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <form action={confirmAction}>
                       <input type="hidden" name="id" value={p.id} />
                       <input
@@ -143,7 +143,7 @@ export default async function PaymentsPage({
                         value={workspaceId}
                       />
                       <ConfirmSubmitButton
-                        className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white"
+                        className="tk-btn-sm"
                         title="Konfirmasi pembayaran?"
                         description={`Pembayaran ${p.paymentNumber} akan dikonfirmasi dan dialokasikan ke tagihan terkait.`}
                         confirmLabel="Ya, konfirmasi"
@@ -160,9 +160,9 @@ export default async function PaymentsPage({
                         value={workspaceId}
                       />
                       <ConfirmSubmitButton
-                        className="rounded-lg border border-zinc-300 px-3 py-1.5 text-xs"
+                        className="tk-btn-secondary !px-2.5 !py-1 !text-xs"
                         title="Tolak pembayaran?"
-                        description={`Pembayaran ${p.paymentNumber} akan ditolak. Tindakan ini mengubah status pembayaran.`}
+                        description={`Pembayaran ${p.paymentNumber} akan ditolak.`}
                         confirmLabel="Ya, tolak"
                         pendingLabel="Menolak..."
                         danger
@@ -174,9 +174,9 @@ export default async function PaymentsPage({
                 )}
               </div>
             </li>
-          ))
-        )}
-      </ul>
+          ))}
+        </ul>
+      )}
     </>
   );
 }

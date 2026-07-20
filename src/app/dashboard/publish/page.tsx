@@ -2,6 +2,11 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/auth';
 import { apiFetch, listProperties, listWorkspaces } from '@/lib/api';
+import {
+  EmptyState,
+  PageHeader,
+  WorkspaceChips,
+} from '@/components/ui';
 
 async function publishAction(formData: FormData) {
   'use server';
@@ -49,44 +54,45 @@ export default async function PublishPage({
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">Terbitkan halaman publik</h1>
-      <p className="mt-1 text-sm text-zinc-600">
-        Tampilkan properti kepada calon penghuni melalui halaman publik dan WhatsApp.
-      </p>
+      <PageHeader
+        title="Terbitkan halaman publik"
+        description="Tampilkan properti kepada calon penghuni melalui halaman publik dan WhatsApp."
+      />
       {sp.slug && (
-        <p className="mt-3 text-sm text-emerald-700">
-          Halaman telah terbit:{' '}
-          <Link href={`/p/${sp.slug}`} className="underline">
+        <div className="tk-alert mt-4" data-variant="success">
+          Halaman terbit:{' '}
+          <Link
+            href={`/p/${sp.slug}`}
+            className="font-medium underline-offset-2 hover:underline"
+          >
             /p/{sp.slug}
           </Link>
-        </p>
-      )}
-      {workspaces.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {workspaces.map((ws) => (
-            <Link
-              key={ws.id}
-              href={`/dashboard/publish?workspaceId=${ws.id}`}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
-                ws.id === workspaceId ? 'bg-zinc-900 text-white' : 'bg-zinc-100'
-              }`}
-            >
-              {ws.name}
-            </Link>
-          ))}
         </div>
       )}
+      {workspaces.length > 0 && (
+        <WorkspaceChips
+          workspaces={workspaces}
+          workspaceId={workspaceId}
+          hrefFor={(id) => `/dashboard/publish?workspaceId=${id}`}
+        />
+      )}
       {error && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
+        <div className="tk-alert mt-4" data-variant="warning">
           {error}
         </div>
       )}
       {workspaceId && properties.length > 0 && (
-        <form action={publishAction} className="mt-8 max-w-lg space-y-4 rounded-xl border bg-white p-4 sm:p-6">
+        <form
+          action={publishAction}
+          className="tk-card mt-8 max-w-lg space-y-4 p-6"
+        >
+          <h2 className="text-base font-semibold text-zinc-900">
+            Pengaturan listing
+          </h2>
           <input type="hidden" name="workspaceId" value={workspaceId} />
-          <label className="flex flex-col gap-1 text-sm">
-            <span>Properti</span>
-            <select name="propertyId" required className="rounded-lg border px-3 py-2">
+          <label className="tk-field">
+            <span className="tk-label">Properti</span>
+            <select name="propertyId" required className="tk-select">
               {properties.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
@@ -94,56 +100,74 @@ export default async function PublishPage({
               ))}
             </select>
           </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span>Alamat halaman publik</span>
+          <label className="tk-field">
+            <span className="tk-label">Slug halaman publik</span>
             <input
               name="slug"
               required
               placeholder="kos-melati"
-              className="rounded-lg border px-3 py-2"
-             />
-            <span className="text-xs text-zinc-500">Hanya huruf kecil, angka, dan tanda hubung. Contoh: kos-melati</span>
+              className="tk-input"
+            />
+            <span className="text-xs text-zinc-500">
+              Huruf kecil, angka, dan tanda hubung. Contoh: kos-melati
+            </span>
           </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span>Nomor WhatsApp</span>
-            <input name="whatsapp" inputMode="tel" placeholder="628123456789" className="rounded-lg border px-3 py-2" />
+          <label className="tk-field">
+            <span className="tk-label">Nomor WhatsApp</span>
+            <input
+              name="whatsapp"
+              inputMode="tel"
+              placeholder="628123456789"
+              className="tk-input"
+            />
           </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span>Warna brand</span>
+          <label className="tk-field">
+            <span className="tk-label">Warna brand</span>
             <input
               name="brandColor"
               type="color"
-              defaultValue="#18181b"
-              className="h-10 w-full rounded-lg border"
+              defaultValue="#047857"
+              className="h-10 w-full rounded-lg border border-zinc-200"
             />
           </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span>Harga mulai (Rp)</span>
+          <label className="tk-field">
+            <span className="tk-label">Harga mulai (Rp)</span>
             <input
               name="startingPrice"
               type="number"
               min={0}
               step={1000}
-              className="rounded-lg border px-3 py-2"
+              className="tk-input"
             />
           </label>
-          <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-            Setelah diterbitkan, halaman dapat dibuka siapa pun yang memiliki tautannya.
+          <p className="tk-alert" data-variant="warning">
+            Setelah diterbitkan, siapa pun dengan tautan dapat membuka halaman.
           </p>
-          <label className="flex items-start gap-2 text-sm">
+          <label className="flex items-start gap-2 text-sm text-zinc-700">
             <input type="checkbox" required className="mt-0.5" />
-            <span>Saya sudah memeriksa properti, harga, dan nomor WhatsApp.</span>
+            <span>
+              Saya sudah memeriksa properti, harga, dan nomor WhatsApp.
+            </span>
           </label>
-          <button
-            type="submit"
-            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm text-white"
-          >
+          <button type="submit" className="tk-btn">
             Terbitkan halaman
           </button>
         </form>
       )}
       {workspaceId && properties.length === 0 && !error && (
-        <p className="mt-6 text-sm text-zinc-600">Belum ada properti yang dapat diterbitkan.</p>
+        <EmptyState
+          className="mt-6"
+          title="Belum ada properti"
+          body="Tambah properti dulu sebelum menerbitkan listing publik."
+          action={
+            <Link
+              href={`/dashboard/properties?workspaceId=${workspaceId}`}
+              className="tk-btn !text-sm"
+            >
+              Ke properti
+            </Link>
+          }
+        />
       )}
     </>
   );

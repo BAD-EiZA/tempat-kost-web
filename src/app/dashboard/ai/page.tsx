@@ -1,7 +1,7 @@
-import Link from 'next/link';
 import { requireAuth } from '@/lib/auth';
 import { listRooms, listWorkspaces } from '@/lib/api';
 import { AiActions } from './ai-actions';
+import { WorkspaceChips, PageHeader } from '@/components/ui';
 
 export default async function AiPage({
   searchParams,
@@ -23,24 +23,16 @@ export default async function AiPage({
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">AI Assistant</h1>
-      <p className="mt-1 text-sm text-zinc-600">
-        Hasil ditampilkan di bawah · human review · Gemini Flash
-      </p>
+      <PageHeader
+        title="AI Assistant"
+        description="Saran AI dengan human review. Model: Gemini Flash."
+      />
       {workspaces.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {workspaces.map((ws) => (
-            <Link
-              key={ws.id}
-              href={`/dashboard/ai?workspaceId=${ws.id}`}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
-                ws.id === workspaceId ? 'bg-zinc-900 text-white' : 'bg-zinc-100'
-              }`}
-            >
-              {ws.name}
-            </Link>
-          ))}
-        </div>
+        <WorkspaceChips
+          workspaces={workspaces}
+          workspaceId={workspaceId}
+          hrefFor={(id) => `/dashboard/ai?workspaceId=${id}`}
+        />
       )}
       {workspaceId ? (
         <AiActions
